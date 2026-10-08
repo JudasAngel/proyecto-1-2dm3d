@@ -10,7 +10,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.aparrese"
+        applicationId = "com.example.apparrese"
         minSdk = 24
         targetSdk = 37
         versionCode = 1
