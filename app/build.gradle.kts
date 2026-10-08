@@ -4,13 +4,13 @@ plugins {
 }
 
 android {
-    namespace = "com.example.main"
+    namespace = "com.example.apparrese"
     compileSdk {
         version = release(37)
     }
 
     defaultConfig {
-        applicationId = "com.example.main"
+        applicationId = "com.example.aparrese"
         minSdk = 24
         targetSdk = 37
         versionCode = 1
