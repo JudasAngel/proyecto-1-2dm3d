@@ -1,6 +1,6 @@
 package com.example.main.ui.pantailak
 
-import com.example.apparrese.R
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -27,20 +27,28 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.apparrese.R
+import com.google.firebase.firestore.FirebaseFirestore
 
 @Composable
 fun PantallaRegistro() {
+    val context = LocalContext.current
+
+    // Conexión a la base de datos Firestore
+    val db = FirebaseFirestore.getInstance()
 
     // Variables para guardar lo que escribe el usuario
     var nombre by remember { mutableStateOf("") }
     var apellido by remember { mutableStateOf("") }
     var gmail by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var nan by remember { mutableStateOf("")}
 
     Column(
         modifier = Modifier
@@ -117,6 +125,35 @@ fun PantallaRegistro() {
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        //NAN
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "NAN:",
+                fontSize = 18.sp
+            )
+
+            OutlinedTextField(
+                value = nan,
+                onValueChange = { nan = it },
+                modifier = Modifier.width(250.dp),
+                placeholder = {
+                    Text("idatzi zure NANa")
+                },
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedBorderColor = Color(0xFFD32F2F),
+                    focusedBorderColor = Color(0xFFD32F2F)
+                )
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         // GMAIL
         Row(
             modifier = Modifier
@@ -178,7 +215,24 @@ fun PantallaRegistro() {
 
         // BOTÓN SORTU
         Button(
-            onClick = {},
+            onClick = {
+                val user = hashMapOf(
+                    "izena" to nombre,
+                    "abizena" to apellido,
+                    "email" to gmail,
+                    "pasahitza" to password,
+                    "NAN" to nan,
+                    "id-type" to 1,
+                    "id" to 23
+                )
+                db.collection("erabiltzaileak").add(user)
+                    .addOnSuccessListener {
+                        Toast.makeText(context, "Erabiltzailea gorde da!", Toast.LENGTH_SHORT).show()
+                    }
+                    .addOnFailureListener { e ->
+                        Toast.makeText(context, "Errorea: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+            },
             modifier = Modifier
                 .width(150.dp)
                 .height(50.dp),
