@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1008870254749",
+    "project_id": "apparrese",
+    "storage_bucket": "apparrese.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1008870254749:android:3b81b102b586c78cd6cc74",
+        "android_client_info": {
+          "package_name": "com.example.apparrese"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBQyUOG8ByB6DIxJSoqDGayY2g-GtluNqA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
