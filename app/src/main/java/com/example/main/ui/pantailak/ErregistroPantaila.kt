@@ -1,5 +1,6 @@
 package com.example.main.ui.pantailak
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -226,10 +227,12 @@ fun PantallaRegistro() {
                     "id" to 23
                 )
                 db.collection("erabiltzaileak").add(user)
-                    .addOnSuccessListener {
+                    .addOnSuccessListener { docRef ->
+                        Log.d("Firestore", "Gordeta ID honekin: ${docRef.id}")
                         Toast.makeText(context, "Erabiltzailea gorde da!", Toast.LENGTH_SHORT).show()
                     }
                     .addOnFailureListener { e ->
+                        Log.e("Firestore", "Errorea Firestore-n", e)
                         Toast.makeText(context, "Errorea: ${e.message}", Toast.LENGTH_SHORT).show()
                     }
             },
