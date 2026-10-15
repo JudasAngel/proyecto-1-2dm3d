@@ -4,7 +4,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import com.example.main.ui.theme.LoginTheme
 import com.example.login.ui.pantailak.SaioHasieraPantaila
 
 class MainActivity : ComponentActivity() {
@@ -15,9 +14,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         setContent {
-            LoginTheme {
-                SaioHasieraPantaila()
-            }
+            SaioHasieraPantaila()
         }
     }
 }
