@@ -1,4 +1,4 @@
-package com.example.main.ui.pantailak
+    package com.example.main.ui.pantailak
 
 import android.util.Log
 import android.widget.Toast
@@ -38,7 +38,7 @@ import com.example.apparrese.R
 import com.google.firebase.firestore.FirebaseFirestore
 
 @Composable
-fun PantallaRegistro() {
+fun ErregistroPantaila() {
     val context = LocalContext.current
 
     // Conexión a la base de datos Firestore
@@ -217,14 +217,35 @@ fun PantallaRegistro() {
         // BOTÓN SORTU
         Button(
             onClick = {
+                if (nombre.isBlank() || apellido.isBlank() || gmail.isBlank() || password.isBlank() || nan.isBlank()) {
+                    Toast.makeText(context, "Eremu guztiak beteta izan behar dira", Toast.LENGTH_SHORT).show()
+                    return@Button
+                }
+
+                val nanRegex = Regex("^[0-9]{8}[A-Za-z]$")
+                if (!nanRegex.matches(nan.trim())) {
+                    Toast.makeText(context, "NANak 8 zenbaki eta letra 1 izan behar ditu (adib. 12345678A)", Toast.LENGTH_SHORT).show()
+                    return@Button
+                }
+
+                if (!android.util.Patterns.EMAIL_ADDRESS.matcher(gmail.trim()).matches()) {
+                    Toast.makeText(context, "E-maila formatu egokian izan behar da", Toast.LENGTH_SHORT).show()
+                    return@Button
+                }
+
+                if (password.trim().length < 6) {
+                    Toast.makeText(context, "Pasahitzak gutxienez 6 karaktere izan behar ditu", Toast.LENGTH_SHORT).show()
+                    return@Button
+                }
+
+
                 val user = hashMapOf(
                     "izena" to nombre,
                     "abizena" to apellido,
                     "email" to gmail,
                     "pasahitza" to password,
                     "NAN" to nan,
-                    "id-type" to 1,
-                    "id" to 23
+                    "id-type" to 1
                 )
                 db.collection("erabiltzaileak").add(user)
                     .addOnSuccessListener { docRef ->
