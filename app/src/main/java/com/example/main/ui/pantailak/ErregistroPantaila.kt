@@ -1,7 +1,10 @@
     package com.example.main.ui.pantailak
 
+import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -35,16 +38,21 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.apparrese.R
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FirebaseFirestore
 
 @Composable
 fun ErregistroPantaila() {
+
     val context = LocalContext.current
 
-    // Conexión a la base de datos Firestore
+    // Firebase Auth eta Firestore
+    val auth = Firebase.auth
     val db = FirebaseFirestore.getInstance()
 
     // Variables para guardar lo que escribe el usuario
+    var id by remember {mutableStateOf("")}
     var nombre by remember { mutableStateOf("") }
     var apellido by remember { mutableStateOf("") }
     var gmail by remember { mutableStateOf("") }
@@ -238,23 +246,35 @@ fun ErregistroPantaila() {
                     return@Button
                 }
 
+                auth.createUserWithEmailAndPassword(gmail.trim(), password.trim())
+                    .addOnCompleteListener { task ->
+                        if (task.isSuccessful) {
+                            Log.d("Firebase", "createUserWithEmail:success")
+                            id = auth.currentUser?.uid ?: ""
+                            
+                            val userData = hashMapOf(
+                                "uid" to id,
+                                "izena" to nombre,
+                                "abizena" to apellido,
+                                "email" to gmail,
+                                "NAN" to nan,
+                                "id-type" to 1
+                            )
 
-                val user = hashMapOf(
-                    "izena" to nombre,
-                    "abizena" to apellido,
-                    "email" to gmail,
-                    "pasahitza" to password,
-                    "NAN" to nan,
-                    "id-type" to 1
-                )
-                db.collection("erabiltzaileak").add(user)
-                    .addOnSuccessListener { docRef ->
-                        Log.d("Firestore", "Gordeta ID honekin: ${docRef.id}")
-                        Toast.makeText(context, "Erabiltzailea gorde da!", Toast.LENGTH_SHORT).show()
-                    }
-                    .addOnFailureListener { e ->
-                        Log.e("Firestore", "Errorea Firestore-n", e)
-                        Toast.makeText(context, "Errorea: ${e.message}", Toast.LENGTH_SHORT).show()
+                            db.collection("erabiltzaileak").document(id).set(userData)
+                                .addOnSuccessListener {
+                                    Log.d("Firestore", "Erabiltzailea ongi gordeta ID honekin: $id")
+                                    Toast.makeText(context, "Erregistroa arrakastatsua eta gordeta!", Toast.LENGTH_SHORT).show()
+                                    (context as? ComponentActivity)?.finish()
+                                }
+                                .addOnFailureListener { e ->
+                                    Log.e("Firestore", "Errorea datuak gordetzen", e)
+                                    Toast.makeText(context, "Errorea Firestore-n: ${e.message}", Toast.LENGTH_SHORT).show()
+                                }
+                        } else {
+                            Log.w("Firebase", "createUserWithEmail:failure", task.exception)
+                            Toast.makeText(context, "Errorea erregistroan: ${task.exception?.message}", Toast.LENGTH_LONG).show()
+                        }
                     }
             },
             modifier = Modifier
