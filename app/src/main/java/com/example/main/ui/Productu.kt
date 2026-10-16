@@ -6,5 +6,5 @@ data class Productu (
     val izena: String,
     val deskribapena: String,
     val prezioa: Number,
-    val argazkia: String
+    val argazkia: Int
 )
