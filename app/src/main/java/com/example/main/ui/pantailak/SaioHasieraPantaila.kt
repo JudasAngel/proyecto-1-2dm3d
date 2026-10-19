@@ -1,16 +1,20 @@
 package com.example.login.ui.pantailak
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
-import com.example.main.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -20,97 +24,265 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.unit.dp
+import com.example.apparrese.R
+import com.example.main.ui.pantailak.ProduktuakPantaila
 import com.example.main.ui.theme.ArreseGorria
+import com.google.firebase.FirebaseNetworkException
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.FirebaseAuthInvalidUserException
+import com.google.firebase.auth.FirebaseAuthUserCollisionException
+import com.google.firebase.auth.FirebaseAuthWeakPasswordException
 
 @Composable
 fun SaioHasieraPantaila() {
 
-    Scaffold { paddingValues ->
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Top
-        ) {
-            // Arrese logoa
-            Image(
-                painter = painterResource(R.drawable.arreselogo),
-                contentDescription = "Arrese logoa",
-                modifier = Modifier
-                    .size(250.dp)
-            )
-
-            ErabPass()
-
-            Botoiak()
-        }
-    }
-}
-
-
-@Composable
-fun ErabPass() {
     var email by remember { mutableStateOf("") }
     var pasahitza by remember { mutableStateOf("") }
+    var kargatzen by remember { mutableStateOf(false) }
+    var saioaHasita by remember { mutableStateOf(false) }
 
-    OutlinedTextField(
-        value = email,
-        onValueChange = { email = it },
-        singleLine = true,
-        label = { Text("Emaila") },
-        colors = OutlinedTextFieldDefaults.colors(
-            unfocusedBorderColor = ArreseGorria,
-            focusedBorderColor = ArreseGorria
-        )
+    val context = LocalContext.current
 
-    )
+    fun erakutsiToast(mezua: String) {
+        Toast.makeText(
+            context,
+            mezua,
+            Toast.LENGTH_SHORT
+        ).show()
+    }
 
-    OutlinedTextField(
-        value = pasahitza,
-        onValueChange = { pasahitza = it },
-        singleLine = true,
-        label = { Text("Pasahitza") },
-        visualTransformation = PasswordVisualTransformation(), //pasahitza sartzerakoan, ez ikustea
-        modifier = Modifier
-            .padding(top = 20.dp),
-        colors = OutlinedTextFieldDefaults.colors(
-            unfocusedBorderColor = ArreseGorria,
-            focusedBorderColor = ArreseGorria
-        )
-    )
-}
+    fun firebaseErrorea(
+        errorea: Exception?,
+        erregistroa: Boolean
+    ): String {
+        return when (errorea) {
 
-@Composable
-fun Botoiak(){
-    Row(
-        modifier = Modifier
-            .padding(top = 70.dp),
-        horizontalArrangement = Arrangement.spacedBy(26.dp)
-    ) {
+            is FirebaseAuthUserCollisionException ->
+                "Email hau dagoeneko erregistratuta dago."
 
-        Button(
-            onClick = {},
-            modifier = Modifier.width(130.dp),
-            shape = RoundedCornerShape(8.dp)
-        ) {
-            Text("Sartu")
+            is FirebaseAuthWeakPasswordException ->
+                "Pasahitzak gutxienez 6 karaktere izan behar ditu."
+
+            is FirebaseAuthInvalidUserException ->
+                "Ez dago email honekin erregistratutako konturik."
+
+            is FirebaseAuthInvalidCredentialsException ->
+                if (erregistroa) {
+                    "Ezin izan da kontua sortu. Egiaztatu emaila."
+                } else {
+                    "Emaila edo pasahitza ez dira zuzenak."
+                }
+
+            is FirebaseNetworkException ->
+                "Konexio-arazo bat dago. Egiaztatu Interneteko konexioa."
+
+            else ->
+                if (erregistroa) {
+                    "Ezin izan da kontua sortu. Saiatu berriro."
+                } else {
+                    "Ezin izan da saioa hasi. Saiatu berriro."
+                }
         }
+    }
 
-        Button(
-            onClick = {},
-            modifier = Modifier.width(130.dp),
-            shape = RoundedCornerShape(8.dp)
-        ) {
-            Text("Erregistratu")
+    Scaffold { paddingValues ->
+
+        if (saioaHasita) {
+
+            // Pantaila erakutsi saioa behar bezala hastean
+            ProduktuakPantaila()
+
+        } else {
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Top
+            ) {
+
+                // Logo Arrese
+                Image(
+                    painter = painterResource(R.drawable.arrese),
+                    contentDescription = "Arrese logoa",
+                    modifier = Modifier.size(250.dp)
+                )
+
+                // Emaila
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    singleLine = true,
+                    label = {
+                        Text("Emaila")
+                    },
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Email
+                    ),
+                    enabled = !kargatzen,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        unfocusedBorderColor = ArreseGorria,
+                        focusedBorderColor = ArreseGorria
+                    )
+                )
+
+                // Pasahitza
+                OutlinedTextField(
+                    value = pasahitza,
+                    onValueChange = { pasahitza = it },
+                    singleLine = true,
+                    label = {
+                        Text("Pasahitza")
+                    },
+                    visualTransformation =
+                        PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password
+                    ),
+                    enabled = !kargatzen,
+                    modifier = Modifier.padding(top = 20.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        unfocusedBorderColor = ArreseGorria,
+                        focusedBorderColor = ArreseGorria
+                    )
+                )
+
+                // Botones
+                Row(
+                    modifier = Modifier.padding(top = 40.dp),
+                    horizontalArrangement = Arrangement.spacedBy(26.dp)
+                ) {
+
+                    // Sartu: iniciar sesión
+                    Button(
+                        onClick = {
+                            if (email.isBlank() || pasahitza.isBlank()) {
+                                erakutsiToast(
+                                    "Bete emaila eta pasahitza."
+                                )
+                            } else {
+
+                                kargatzen = true
+
+                                FirebaseAuth.getInstance()
+                                    .signInWithEmailAndPassword(
+                                        email.trim(),
+                                        pasahitza
+                                    )
+                                    .addOnCompleteListener { task ->
+
+                                        kargatzen = false
+                                        if (task.isSuccessful) {
+                                            erakutsiToast(
+                                                "Saioa behar bezala hasi da!"
+                                            )
+
+                                            // Abrir la pantalla de bienvenida
+                                            saioaHasita = true
+
+                                        } else {
+
+                                            erakutsiToast(
+                                                firebaseErrorea(
+                                                    task.exception,
+                                                    false
+                                                )
+                                            )
+                                        }
+                                    }
+                            }
+                        },
+                        enabled = !kargatzen,
+                        modifier = Modifier.width(130.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = ArreseGorria,
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Text("Sartu")
+                    }
+
+                    // Erregistratu: crear cuenta
+                    Button(
+                        onClick = {
+
+                            if (email.isBlank() || pasahitza.isBlank()) {
+
+                                erakutsiToast(
+                                    "Bete emaila eta pasahitza."
+                                )
+
+                            } else if (pasahitza.length < 6) {
+
+                                erakutsiToast(
+                                    "Pasahitzak gutxienez 6 karaktere izan behar ditu."
+                                )
+
+                            } else {
+
+                                kargatzen = true
+
+                                FirebaseAuth.getInstance()
+                                    .createUserWithEmailAndPassword(
+                                        email.trim(),
+                                        pasahitza
+                                    )
+                                    .addOnCompleteListener { task ->
+
+                                        kargatzen = false
+
+                                        if (task.isSuccessful) {
+                                            erakutsiToast(
+                                                "Erregistroa behar bezala egin da!"
+                                            )
+
+                                            saioaHasita = true
+
+                                        } else {
+                                            erakutsiToast(
+                                                firebaseErrorea(
+                                                    task.exception,
+                                                    true
+                                                )
+                                            )
+                                        }
+                                    }
+                            }
+                        },
+                        enabled = !kargatzen,
+                        modifier = Modifier.width(130.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = ArreseGorria,
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Text("Erregistratu")
+                    }
+                }
+
+                Spacer(
+                    modifier = Modifier.padding(top = 16.dp)
+                )
+
+                // Indicador de carga
+                if (kargatzen) {
+                    CircularProgressIndicator(
+                        color = ArreseGorria
+                    )
+                }
+            }
         }
-
-
     }
 }
