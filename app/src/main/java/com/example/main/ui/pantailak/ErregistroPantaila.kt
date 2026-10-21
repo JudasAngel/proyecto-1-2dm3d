@@ -42,7 +42,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.apparrese.R
-import com.example.main.ui.theme.LoginTheme
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -277,11 +276,5 @@ fun ErregistroPantaila() {
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun ErregistroPantailaPreview() {
-    LoginTheme {
-        ErregistroPantaila()
-    }
-}
+
 

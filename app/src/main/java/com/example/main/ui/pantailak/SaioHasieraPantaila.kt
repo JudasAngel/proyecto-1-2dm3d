@@ -33,6 +33,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.apparrese.R
+import com.example.main.ui.pantailak.ProduktuakGehitu
 import com.example.main.ui.pantailak.ProduktuakPantaila
 import com.example.main.ui.theme.ArreseGorria
 import com.google.firebase.FirebaseNetworkException
@@ -157,13 +158,13 @@ fun SaioHasieraPantaila() {
                     )
                 )
 
-                // Botones
+                // Botoiak
                 Row(
                     modifier = Modifier.padding(top = 40.dp),
                     horizontalArrangement = Arrangement.spacedBy(26.dp)
                 ) {
 
-                    // Sartu: iniciar sesión
+                    // Sartu erregistratua zaudenenan
                     Button(
                         onClick = {
                             if (email.isBlank() || pasahitza.isBlank()) {
@@ -184,10 +185,10 @@ fun SaioHasieraPantaila() {
                                         kargatzen = false
                                         if (task.isSuccessful) {
                                             erakutsiToast(
-                                                "Saioa behar bezala hasi da!"
+                                                "Ongi etorri "+ email + "!"
                                             )
 
-                                            // Abrir la pantalla de bienvenida
+                                            // saioaHasi pantaila zabaldu
                                             saioaHasita = true
 
                                         } else {
@@ -213,7 +214,7 @@ fun SaioHasieraPantaila() {
                         Text("Sartu")
                     }
 
-                    // Erregistratu: crear cuenta
+                    // Erregistratu: ez duzunean kontua
                     Button(
                         onClick = {
 

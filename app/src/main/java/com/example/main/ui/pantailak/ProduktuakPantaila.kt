@@ -3,7 +3,6 @@ package com.example.main.ui.pantailak
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -36,22 +35,21 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.example.apparrese.R
 import com.example.main.ui.theme.ArreseGorria
-import com.example.objetos.ui.`class`.Productu
+import com.example.main.ui.data.Produktua
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
-val productuTest = Productu(
-    id = "1",
+val productuTest = Produktua(
     tipo = "Opildegiak",
     izena = "Gurinezko opila",
     deskribapena = "Bollo de mantequilla con azucar por rncima",
     prezioa = 2.40,
-    argazkia = R.drawable.predeterminada
+    //argazkia = R.drawable.predeterminada,
+    stocka = 2
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -202,14 +200,14 @@ fun ProduktuakPantaila() {
             }
             item{
 
-            Image(
-                painter = painterResource(productuTest.argazkia),
-                contentDescription = productuTest.izena,
-                modifier = Modifier
-                    .width(350.dp)
-                    .height(350.dp)
-                    .padding(top = 16.dp)
-            )
+//            //Image(
+//                //painter = painterResource(productuTest.argazkia),
+//                contentDescription = productuTest.izena,
+//                modifier = Modifier
+//                    .width(350.dp)
+//                    .height(350.dp)
+//                    .padding(top = 16.dp)
+//            )
 
             Spacer(modifier = Modifier.height(12.dp))
             Text(
