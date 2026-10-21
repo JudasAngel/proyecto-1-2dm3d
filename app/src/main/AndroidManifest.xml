@@ -29,6 +29,10 @@
             android:name="com.example.main.ui.pantailak.SaioHasieraPantaila"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name="com.example.main.ui.pantailak.ProduktuakGehitu"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
     </application>
 
 </manifest>
