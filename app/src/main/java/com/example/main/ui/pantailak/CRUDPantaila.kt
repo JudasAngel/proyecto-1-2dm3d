@@ -1,12 +1,12 @@
 package com.example.main.ui.pantailak
 
-import android.os.Bundle
-import android.util.Log
 import android.widget.Toast
+import java.util.Locale
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
@@ -41,6 +42,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -65,9 +67,7 @@ fun CRUDPantaila() {
             .addOnSuccessListener { result ->
                 val list = result.documents.mapNotNull { doc ->
                     val data = doc.data
-                    if (data != null) {
-                        data.toMutableMap().apply { put("id", doc.id) }
-                    } else null
+                    data?.toMutableMap()?.apply { put("id", doc.id) }
                 }
                 productList = list
             }
@@ -110,20 +110,23 @@ fun CRUDPantaila() {
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             if (productList.isEmpty()) {
                 Text(
-                    text = "Ez dago produkturik",
+                    text = "Produktuak Kargatzen...",
                     modifier = Modifier.padding(top = 16.dp),
                     color = Color.Gray
                 )
             } else {
                 productList.forEach { product ->
                     val docId = product["id"] as? String ?: ""
-                    val izena = product["izena"] as? String ?: "Izena gabe"
+                    var izena = product["izena"] as? String ?: "Izenik gabe"
                     val prezioa = (product["prezioa"] as? Number)?.toDouble() ?: 0.0
                     val stock = (product["stock"] as? Number)?.toInt() ?: 0
+
+                    if(izena.trim() == "") {
+                        izena = "Izenik gabe"
+                    }
 
                     ProductRow(
                         name = izena,
@@ -155,63 +158,83 @@ fun ProductRow(name: String, price: Double, stock: Int, onDelete: () -> Unit, mo
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 4.dp, vertical = 6.dp),
+            .padding(vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Text(
-            text = name,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.weight(1.5f)
-        )
-
-        Text(
-            text = "$price €",
-            fontSize = 14.sp,
-            color = Color.DarkGray,
-            modifier = Modifier.width(80.dp)
-        )
-
-        Text(
-            text = "Stock: $stock",
-            fontSize = 14.sp,
-            color = Color.Gray,
-            modifier = Modifier.width(90.dp)
-        )
+        Column(
+            modifier = Modifier.weight(1f)
+        ) {
+            Text(
+                text = name,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = String.format(Locale.ROOT, "%.2f €", price),
+                    fontSize = 14.sp,
+                    color = Color.DarkGray
+                )
+                Text(
+                    text = "Stock: $stock",
+                    fontSize = 14.sp,
+                    color = Color.Gray
+                )
+            }
+        }
 
         Row(
-            horizontalArrangement = Arrangement.spacedBy(2.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(
                 onClick = { /* TODO: Navegación a editar */ },
-                modifier = Modifier.size(36.dp)
+                modifier = Modifier.size(30.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Edit,
                     contentDescription = "Editar $name",
-                    modifier = Modifier.size(20.dp),
+                    modifier = Modifier.size(26.dp),
                     tint = Color.Gray
                 )
             }
             IconButton(
                 onClick = onDelete,
-                modifier = Modifier.size(36.dp)
+                modifier = Modifier.size(30.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Delete,
                     contentDescription = "Eliminar $name",
-                    modifier = Modifier.size(20.dp),
+                    modifier = Modifier.size(26.dp),
                     tint = Color.Red
                 )
             }
         }
     }
+    HorizontalDivider(Modifier.padding(horizontal = 8.dp), 1.dp, Color.Gray)
 }
 
 @Preview(showBackground = true)
 @Composable
 fun CRUDPantailaPreview() {
-    CRUDPantaila()
+    // Note: CRUDPantaila requires Firebase, test ProductRowPreview instead
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ProductRowPreview() {
+    Column(modifier = Modifier.padding(16.dp)) {
+        // Variation 1: Subtitle layout (Price & stock under name)
+        ProductRow(
+            name = "Gurinezko opila",
+            price = 2.40,
+            stock = 15,
+            onDelete = {}
+        )
+    }
 }
