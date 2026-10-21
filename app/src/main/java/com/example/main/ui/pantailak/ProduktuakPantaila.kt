@@ -1,4 +1,3 @@
-
 package com.example.main.ui.pantailak
 
 import androidx.compose.foundation.Image
@@ -43,20 +42,47 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-val productuTest = Produktua(
-    tipo = "Opildegiak",
-    izena = "Gurinezko opila",
-    deskribapena = "Bollo de mantequilla con azucar por rncima",
-    prezioa = 2.40,
-    //argazkia = R.drawable.predeterminada,
-    stocka = 2
-)
+import com.google.firebase.firestore.FirebaseFirestore
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.lazy.items
+import androidx.compose.ui.platform.LocalContext
+import com.example.main.ui.theme.ArreseBeltza
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProduktuakPantaila() {
-
     var menuAbierto by remember { mutableStateOf(false) }
+
+    var produktuak by remember {
+        mutableStateOf<List<Produktua>>(emptyList())
+    }
+    var motak by remember {
+        mutableStateOf<Map<Int, String>>(emptyMap())
+    }
+    var errorea by remember {
+        mutableStateOf<String?>(null)
+    }
+
+    LaunchedEffect(Unit) {
+        KargatuMotak { mapa ->
+            motak = mapa
+        }
+        ProduktuakKargatu(
+            resultado = { lista ->
+                produktuak = lista
+            },
+            errorea = { mensaje ->
+                errorea = mensaje
+            }
+        )
+
+    }
+
+    val context = LocalContext.current
+
+
 
     Scaffold(
         // BARRA SUPERIOR
@@ -178,79 +204,177 @@ fun ProduktuakPantaila() {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-            .padding(
-                start = 16.dp,
-                end = 16.dp,
-                top = 16.dp
-            ),
+                .padding(
+                    start = 16.dp,
+                    end = 16.dp,
+                    top = 16.dp
+                ),
             horizontalAlignment = Alignment.CenterHorizontally
 
         ) {
             item {
-            Text(
-                text = productuTest.tipo,
-                fontSize = 30.sp,
-                fontFamily = FontFamily.Serif
-            )
-            HorizontalDivider(
-                    modifier = Modifier
-                        .width(120.dp)
-                        .padding(vertical = 8.dp)
-            )
-            }
-            item{
-
-//            //Image(
-//                //painter = painterResource(productuTest.argazkia),
-//                contentDescription = productuTest.izena,
-//                modifier = Modifier
-//                    .width(350.dp)
-//                    .height(350.dp)
-//                    .padding(top = 16.dp)
-//            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = productuTest.tipo,
-                color = Color.Gray,
-                fontSize = 14.sp,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
                 Text(
-                    modifier = Modifier.padding(top = 8.dp),
-                    text = productuTest.izena,
-                    fontSize = 22.sp,
-                    fontFamily = FontFamily.Serif
+                    text = "Sin categoría",
+                    fontSize = 30.sp,
+                    fontFamily = FontFamily.Serif,
+                    color = ArreseBeltza
+
                 )
-
-                Text(
-                    modifier = Modifier.padding(top = 8.dp),
-                    text = "${productuTest.prezioa}€",
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold
-                )
-
-
-            }
-
                 HorizontalDivider(
-                    modifier = Modifier
-                        .width(500.dp)
-                        .padding(vertical = 10.dp),
-                    color = MaterialTheme.colorScheme.primary
-
-
+                    modifier = Modifier.padding(vertical = 8.dp)
                 )
-
-
-
             }
-            }
+            if (errorea != null) {
+                item {
+                    Text(text = "Error: $errorea",
+                        color = ArreseBeltza
+                    )
 
+                }
+            } else if (produktuak.isEmpty()) {
+                item {
+                    Text("Cargatzen ...")
+                }
+            } else {
+
+                items(produktuak) { produktua ->
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 12.dp)
+                    ) {
+
+                        android.util.Log.d("IMG", "Firebase: ${produktua.argazkia}")
+
+                        val imageResId = produktua.argazkia?.let {
+                            context.resources.getIdentifier(
+                                it.lowercase(),
+                                "drawable",
+                                context.packageName
+                            )
+                        } ?: 0
+
+
+                        android.util.Log.d("IMG", "ID Imagen: $imageResId")
+
+                        Image(
+                            painter = painterResource(
+                                id = if (imageResId != 0)
+                                    imageResId
+                                else
+                                    R.drawable.predeterminada
+                            ),
+                            contentDescription = produktua.izena,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(250.dp)
+                        )
+
+
+                        Text(
+                            text = motak[produktua.mota] ?: "Sin categoría",
+                            fontSize = 22.sp,
+                            fontFamily = FontFamily.Serif,
+                            color = ArreseBeltza
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = produktua.izena,
+                                fontSize = 22.sp,
+                                fontFamily = FontFamily.Serif,
+                                color = ArreseBeltza
+
+                            )
+
+                            Text(
+                                text = "${produktua.prezioa} €",
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = ArreseBeltza
+
+                            )
+                        }
+
+                        HorizontalDivider(
+                            modifier = Modifier
+                                .width(500.dp)
+                                .padding(vertical = 10.dp),
+                            color = ArreseBeltza
+
+
+                        )
+                        Text(
+                            text = "Sartu karritora ➝",
+                            color = ArreseGorria,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+
+                    }
+                }
+            }
         }
     }
+}
+
+fun ProduktuakKargatu(
+    resultado: (List<Produktua>) -> Unit,
+    errorea: (String) -> Unit
+) {
+    val db = FirebaseFirestore.getInstance()
+    db.collection("produktuak")
+        .get()
+        .addOnSuccessListener { documentos ->
+            android.util.Log.d(
+                "FIRESTORE",
+                "Documentos encontrados: ${documentos.size()}"
+            )
+            documentos.documents.forEach { documento ->
+                android.util.Log.d(
+                    "FIRESTORE",
+                    "ID: ${documento.id}, datos: ${documento.data}"
+                )
+            }
+
+            val lista = documentos.documents.mapNotNull { documento ->
+                try {
+                    documento.toObject(Produktua::class.java)
+                } catch (e: Exception) {
+                    android.util.Log.e(
+                        "FIRESTORE",
+                        "Error en documento ${documento.id}",
+                        e
+                    )
+                    null
+                }
+            }
+
+            android.util.Log.d(
+                "FIRESTORE",
+                "Productos convertidos: ${lista.size}"
+            )
+            resultado(lista)
+        }
+        .addOnFailureListener { e ->
+            errorea(e.message ?: "Errorea produktuak kargatzean")
+        }
+}
+
+fun KargatuMotak(
+    resultado: (Map<Int, String>) -> Unit
+) {
+    FirebaseFirestore.getInstance()
+        .collection("product_type")
+        .get()
+        .addOnSuccessListener { docs ->
+
+            val motak = docs.documents.associate { doc ->
+                doc.id.toInt() to (doc.getString("izena") ?: "")
+            }
+
+            resultado(motak)
+        }
+}
