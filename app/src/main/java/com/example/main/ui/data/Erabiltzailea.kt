@@ -1,7 +1,7 @@
-package com.example.objetos.ui.`class`
+package com.example.main.ui.data
 
 //Erabiltazile klass bat sortu dugu erabiltaleen datuekin.
- data class Erabiltzaile(
+ data class Erabiltzailea(
     val nan: String,
     val izena: String,
     val abizena: String,
@@ -9,4 +9,3 @@ package com.example.objetos.ui.`class`
     val pass: String,
     val tipo: Int = 2
 )
-
