@@ -33,7 +33,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.apparrese.R
-import com.example.main.ui.pantailak.ProduktuakPantaila
 import com.example.main.ui.theme.ArreseGorria
 import com.google.firebase.FirebaseNetworkException
 import com.google.firebase.auth.FirebaseAuth
@@ -99,7 +98,7 @@ fun SaioHasieraPantaila() {
         if (saioaHasita) {
 
             // Pantaila erakutsi saioa behar bezala hastean
-            ProduktuakPantaila()
+            DetalleProductoScreen()
 
         } else {
 
