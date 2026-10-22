@@ -1,5 +1,6 @@
 package com.example.main.ui.pantailak
 
+import android.app.Activity
 import android.widget.Toast
 import java.util.Locale
 import androidx.compose.foundation.layout.Arrangement
@@ -37,29 +38,47 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.firestore.FirebaseFirestore
 
-@Composable
-fun CRUDPantaila() {
-    val db = FirebaseFirestore.getInstance()
-    var productList by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
-    val context = LocalContext.current
-
-    val fetchProducts = {
-        db.collection("produktuak")
-            .get()
+// Zure apunteetako egitura berdin-berdina (Runnable inplementatuz)
+class ProduktuakKargatuRunnable(
+    private val activity: Activity,
+    private val actualizator: (List<Map<String, Any>>) -> Unit
+) : Runnable {
+    override fun run() {
+        val db = FirebaseFirestore.getInstance()
+        db.collection("produktuak").get()
             .addOnSuccessListener { result ->
                 val list = result.documents.mapNotNull { doc ->
                     val data = doc.data
                     data?.toMutableMap()?.apply { put("id", doc.id) }
                 }
+                
+                // Zure apunteetan bezala: activity.runOnUiThread erabiliz interfazea eguneratu
+                activity.runOnUiThread {
+                    actualizator(list)
+                }
+            }
+    }
+}
+
+@Composable
+fun CRUDPantaila() {
+    var productList by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
+    val context = LocalContext.current
+    val activity = context as? Activity
+
+    val kargatuDatuak = {
+        if (activity != null) {
+            // Zure apunteen modura sortu eta abiarazi:
+            val tarea = ProduktuakKargatuRunnable(activity) { list ->
                 productList = list
             }
-            .addOnFailureListener { e ->
-                Toast.makeText(context, "Errorea produktuak kargatzerakoan: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
+            val hilo = Thread(tarea)
+            hilo.start()
+        }
     }
 
     LaunchedEffect(Unit) {
-        fetchProducts()
+        kargatuDatuak()
     }
 
     Column(
@@ -67,18 +86,15 @@ fun CRUDPantaila() {
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        // Top right add button
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = {
-                // TODO: navegación para añadir producto
-            }) {
+            IconButton(onClick = { }) {
                 Icon(
                     imageVector = Icons.Default.Add,
-                    contentDescription = "Añadir producto",
+                    contentDescription = "Gehitu",
                     modifier = Modifier.size(28.dp),
                     tint = Color.Black
                 )
@@ -87,7 +103,6 @@ fun CRUDPantaila() {
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Product list with vertical separation
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -115,16 +130,22 @@ fun CRUDPantaila() {
                         price = prezioa,
                         stock = stock,
                         onDelete = {
-                            if (docId.isNotEmpty()) {
-                                db.collection("produktuak").document(docId)
-                                    .delete()
-                                    .addOnSuccessListener {
-                                        Toast.makeText(context, "Produktua ezabatuta", Toast.LENGTH_SHORT).show()
-                                        fetchProducts()
+                            if (docId.isNotEmpty() && activity != null) {
+                                // Hemen ere Runnable erabil dezakezu zure apunteen estiloan
+                                val deleteRunnable = object : Runnable {
+                                    override fun run() {
+                                        FirebaseFirestore.getInstance()
+                                            .collection("produktuak").document(docId)
+                                            .delete()
+                                            .addOnSuccessListener {
+                                                activity.runOnUiThread {
+                                                    Toast.makeText(context, "Produktua ezabatuta", Toast.LENGTH_SHORT).show()
+                                                    kargatuDatuak()
+                                                }
+                                            }
                                     }
-                                    .addOnFailureListener { e ->
-                                        Toast.makeText(context, "Errorea ezabatzean: ${e.message}", Toast.LENGTH_SHORT).show()
-                                    }
+                                }
+                                Thread(deleteRunnable).start()
                             }
                         },
                         modifier = Modifier.fillMaxWidth()
@@ -175,12 +196,12 @@ fun ProductRow(name: String, price: Double, stock: Int, onDelete: () -> Unit, mo
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(
-                onClick = { /* TODO: Navegación a editar */ },
+                onClick = { },
                 modifier = Modifier.size(30.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Edit,
-                    contentDescription = "Editar $name",
+                    contentDescription = "Editatu",
                     modifier = Modifier.size(26.dp),
                     tint = Color.Gray
                 )
@@ -191,7 +212,7 @@ fun ProductRow(name: String, price: Double, stock: Int, onDelete: () -> Unit, mo
             ) {
                 Icon(
                     imageVector = Icons.Default.Delete,
-                    contentDescription = "Eliminar $name",
+                    contentDescription = "Ezabatu",
                     modifier = Modifier.size(26.dp),
                     tint = Color.Red
                 )
@@ -203,15 +224,8 @@ fun ProductRow(name: String, price: Double, stock: Int, onDelete: () -> Unit, mo
 
 @Preview(showBackground = true)
 @Composable
-fun CRUDPantailaPreview() {
-    // Note: CRUDPantaila requires Firebase, test ProductRowPreview instead
-}
-
-@Preview(showBackground = true)
-@Composable
 fun ProductRowPreview() {
     Column(modifier = Modifier.padding(16.dp)) {
-        // Variation 1: Subtitle layout (Price & stock under name)
         ProductRow(
             name = "Gurinezko opila",
             price = 2.40,
