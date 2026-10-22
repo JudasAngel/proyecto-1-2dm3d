@@ -275,6 +275,3 @@ fun ErregistroPantaila() {
 
     }
 }
-
-
-
