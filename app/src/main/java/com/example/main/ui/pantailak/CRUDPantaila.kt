@@ -1,5 +1,6 @@
 package com.example.main.ui.pantailak
 
+import android.app.Activity
 import android.widget.Toast
 import java.util.Locale
 import androidx.compose.foundation.layout.Arrangement
@@ -39,27 +40,33 @@ import com.google.firebase.firestore.FirebaseFirestore
 
 @Composable
 fun CRUDPantaila() {
-    val db = FirebaseFirestore.getInstance()
     var productList by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
     val context = LocalContext.current
+    val activity = context as? Activity
 
-    val fetchProducts = {
-        db.collection("produktuak")
-            .get()
-            .addOnSuccessListener { result ->
-                val list = result.documents.mapNotNull { doc ->
-                    val data = doc.data
-                    data?.toMutableMap()?.apply { put("id", doc.id) }
-                }
-                productList = list
-            }
-            .addOnFailureListener { e ->
-                Toast.makeText(context, "Errorea produktuak kargatzerakoan: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
+    // Thread que carga los productos
+    val kargatuDatuak = {
+        if (activity != null) {
+            Thread {
+                val db = FirebaseFirestore.getInstance()
+                db.collection("produktuak").get()
+                    .addOnSuccessListener { result ->
+                        val list = result.documents.mapNotNull { doc ->
+                            val data = doc.data
+                            data?.toMutableMap()?.apply { put("id", doc.id) }
+                        }
+                        
+                        // Interfazea eguneratzeko runOnUiThread
+                        activity.runOnUiThread {
+                            productList = list
+                        }
+                    }
+            }.start()
+        }
     }
 
     LaunchedEffect(Unit) {
-        fetchProducts()
+        kargatuDatuak()
     }
 
     Column(
@@ -67,18 +74,15 @@ fun CRUDPantaila() {
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        // Top right add button
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = {
-                // TODO: navegación para añadir producto
-            }) {
+            IconButton(onClick = { }) {
                 Icon(
                     imageVector = Icons.Default.Add,
-                    contentDescription = "Añadir producto",
+                    contentDescription = "Gehitu",
                     modifier = Modifier.size(28.dp),
                     tint = Color.Black
                 )
@@ -87,7 +91,6 @@ fun CRUDPantaila() {
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Product list with vertical separation
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -115,16 +118,19 @@ fun CRUDPantaila() {
                         price = prezioa,
                         stock = stock,
                         onDelete = {
-                            if (docId.isNotEmpty()) {
-                                db.collection("produktuak").document(docId)
-                                    .delete()
-                                    .addOnSuccessListener {
-                                        Toast.makeText(context, "Produktua ezabatuta", Toast.LENGTH_SHORT).show()
-                                        fetchProducts()
-                                    }
-                                    .addOnFailureListener { e ->
-                                        Toast.makeText(context, "Errorea ezabatzean: ${e.message}", Toast.LENGTH_SHORT).show()
-                                    }
+                            if (docId.isNotEmpty() && activity != null) {
+                                // Thread para borrar
+                                Thread {
+                                    FirebaseFirestore.getInstance()
+                                        .collection("produktuak").document(docId)
+                                        .delete()
+                                        .addOnSuccessListener {
+                                            activity.runOnUiThread {
+                                                Toast.makeText(context, "Produktua ezabatuta", Toast.LENGTH_SHORT).show()
+                                                kargatuDatuak()
+                                            }
+                                        }
+                                }.start()
                             }
                         },
                         modifier = Modifier.fillMaxWidth()
@@ -175,12 +181,12 @@ fun ProductRow(name: String, price: Double, stock: Int, onDelete: () -> Unit, mo
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(
-                onClick = { /* TODO: Navegación a editar */ },
+                onClick = { },
                 modifier = Modifier.size(30.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Edit,
-                    contentDescription = "Editar $name",
+                    contentDescription = "Editatu",
                     modifier = Modifier.size(26.dp),
                     tint = Color.Gray
                 )
@@ -191,7 +197,7 @@ fun ProductRow(name: String, price: Double, stock: Int, onDelete: () -> Unit, mo
             ) {
                 Icon(
                     imageVector = Icons.Default.Delete,
-                    contentDescription = "Eliminar $name",
+                    contentDescription = "Ezabatu",
                     modifier = Modifier.size(26.dp),
                     tint = Color.Red
                 )
@@ -203,15 +209,8 @@ fun ProductRow(name: String, price: Double, stock: Int, onDelete: () -> Unit, mo
 
 @Preview(showBackground = true)
 @Composable
-fun CRUDPantailaPreview() {
-    // Note: CRUDPantaila requires Firebase, test ProductRowPreview instead
-}
-
-@Preview(showBackground = true)
-@Composable
 fun ProductRowPreview() {
     Column(modifier = Modifier.padding(16.dp)) {
-        // Variation 1: Subtitle layout (Price & stock under name)
         ProductRow(
             name = "Gurinezko opila",
             price = 2.40,
