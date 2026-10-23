@@ -38,42 +38,30 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.firestore.FirebaseFirestore
 
-// Zure apunteetako egitura berdin-berdina (Runnable inplementatuz)
-class ProduktuakKargatuRunnable(
-    private val activity: Activity,
-    private val actualizator: (List<Map<String, Any>>) -> Unit
-) : Runnable {
-    override fun run() {
-        val db = FirebaseFirestore.getInstance()
-        db.collection("produktuak").get()
-            .addOnSuccessListener { result ->
-                val list = result.documents.mapNotNull { doc ->
-                    val data = doc.data
-                    data?.toMutableMap()?.apply { put("id", doc.id) }
-                }
-                
-                // Zure apunteetan bezala: activity.runOnUiThread erabiliz interfazea eguneratu
-                activity.runOnUiThread {
-                    actualizator(list)
-                }
-            }
-    }
-}
-
 @Composable
 fun CRUDPantaila() {
     var productList by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
     val context = LocalContext.current
     val activity = context as? Activity
 
+    // Thread que carga los productos
     val kargatuDatuak = {
         if (activity != null) {
-            // Zure apunteen modura sortu eta abiarazi:
-            val tarea = ProduktuakKargatuRunnable(activity) { list ->
-                productList = list
-            }
-            val hilo = Thread(tarea)
-            hilo.start()
+            Thread {
+                val db = FirebaseFirestore.getInstance()
+                db.collection("produktuak").get()
+                    .addOnSuccessListener { result ->
+                        val list = result.documents.mapNotNull { doc ->
+                            val data = doc.data
+                            data?.toMutableMap()?.apply { put("id", doc.id) }
+                        }
+                        
+                        // Interfazea eguneratzeko runOnUiThread
+                        activity.runOnUiThread {
+                            productList = list
+                        }
+                    }
+            }.start()
         }
     }
 
@@ -131,21 +119,18 @@ fun CRUDPantaila() {
                         stock = stock,
                         onDelete = {
                             if (docId.isNotEmpty() && activity != null) {
-                                // Hemen ere Runnable erabil dezakezu zure apunteen estiloan
-                                val deleteRunnable = object : Runnable {
-                                    override fun run() {
-                                        FirebaseFirestore.getInstance()
-                                            .collection("produktuak").document(docId)
-                                            .delete()
-                                            .addOnSuccessListener {
-                                                activity.runOnUiThread {
-                                                    Toast.makeText(context, "Produktua ezabatuta", Toast.LENGTH_SHORT).show()
-                                                    kargatuDatuak()
-                                                }
+                                // Thread para borrar
+                                Thread {
+                                    FirebaseFirestore.getInstance()
+                                        .collection("produktuak").document(docId)
+                                        .delete()
+                                        .addOnSuccessListener {
+                                            activity.runOnUiThread {
+                                                Toast.makeText(context, "Produktua ezabatuta", Toast.LENGTH_SHORT).show()
+                                                kargatuDatuak()
                                             }
-                                    }
-                                }
-                                Thread(deleteRunnable).start()
+                                        }
+                                }.start()
                             }
                         },
                         modifier = Modifier.fillMaxWidth()
