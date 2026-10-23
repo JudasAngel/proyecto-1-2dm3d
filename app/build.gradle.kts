@@ -1,3 +1,13 @@
+import java.util.Properties
+
+val localProps = Properties().apply {
+    val localPropsFile = rootProject.file("local.properties")
+    if (localPropsFile.exists()) {
+        // UTF-8: con inputStream() se lee como ISO-8859-1 y caracteres como "ñ" llegan corruptos
+        localPropsFile.reader(Charsets.UTF_8).use { load(it) }
+    }
+}
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -18,6 +28,9 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("String", "LAMBDA_URL", "\"${localProps.getProperty("LAMBDA_URL", "")}\"")
+        buildConfigField("String", "LAMBDA_API_TOKEN", "\"${localProps.getProperty("LAMBDA_API_TOKEN", "")}\"")
     }
 
     buildTypes {
@@ -33,6 +46,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 

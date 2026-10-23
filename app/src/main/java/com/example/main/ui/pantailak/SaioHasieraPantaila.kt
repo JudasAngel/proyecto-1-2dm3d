@@ -34,12 +34,16 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.apparrese.R
 import com.example.main.ui.theme.ArreseGorria
+// Servicio que avisa por email del inicio de sesión (AWS Lambda).
+// Ajusta este import al paquete donde tengas LoginEmailService en este proyecto.
+import com.example.main.network.LoginEmailService
 import com.google.firebase.FirebaseNetworkException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException
+
 
 @Composable
 fun SaioHasieraPantaila() {
@@ -184,6 +188,22 @@ fun SaioHasieraPantaila() {
                                         if (task.isSuccessful) {
                                             erakutsiToast(
                                                 "Ongi etorri "+ email + "!"
+                                            )
+
+                                            // Avisa por email de que se ha iniciado sesión (AWS Lambda)
+                                            val erabiltzailea = task.result?.user
+                                            val erabiltzaileEmaila =
+                                                erabiltzailea?.email ?: email.trim()
+                                            // Firebase no guarda el nombre por defecto:
+                                            // si no hay displayName se usa la parte del email antes de la @
+                                            val erabiltzaileIzena =
+                                                erabiltzailea?.displayName
+                                                    ?.takeIf { it.isNotBlank() }
+                                                    ?: erabiltzaileEmaila.substringBefore("@")
+
+                                            LoginEmailService.sendLoginEmailInBackground(
+                                                erabiltzaileEmaila,
+                                                erabiltzaileIzena
                                             )
 
                                             // saioaHasi pantaila zabaldu

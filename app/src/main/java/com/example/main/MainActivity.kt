@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.example.login.ui.pantailak.SaioHasieraPantaila
+import com.example.main.ui.pantailak.CRUDPantaila
 import com.example.main.ui.pantailak.ProduktuakGehitu
 
 class MainActivity : ComponentActivity() {
