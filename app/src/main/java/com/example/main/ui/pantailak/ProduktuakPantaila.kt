@@ -48,6 +48,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.items
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import com.example.main.ui.theme.ArreseBeltza
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -214,10 +215,10 @@ fun ProduktuakPantaila() {
         ) {
             item {
                 Text(
-                    text = "Sin categoría",
+                    text = "Produktuak",
                     fontSize = 30.sp,
                     fontFamily = FontFamily.Serif,
-                    color = ArreseBeltza
+                    color = MaterialTheme.colorScheme.onSurface
 
                 )
                 HorizontalDivider(
@@ -227,7 +228,7 @@ fun ProduktuakPantaila() {
             if (errorea != null) {
                 item {
                     Text(text = "Error: $errorea",
-                        color = ArreseBeltza
+                        color = MaterialTheme.colorScheme.onSurface
                     )
 
                 }
@@ -272,20 +273,21 @@ fun ProduktuakPantaila() {
 
 
                         Text(
+                            modifier = Modifier.padding( top= 10.dp),
                             text = motak[produktua.mota] ?: "Sin categoría",
                             fontSize = 22.sp,
                             fontFamily = FontFamily.Serif,
-                            color = ArreseBeltza
+                            color = MaterialTheme.colorScheme.onTertiary
                         )
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().padding( top= 10.dp),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
                                 text = produktua.izena,
                                 fontSize = 22.sp,
                                 fontFamily = FontFamily.Serif,
-                                color = ArreseBeltza
+                                color = MaterialTheme.colorScheme.onSurface
 
                             )
 
@@ -293,7 +295,7 @@ fun ProduktuakPantaila() {
                                 text = "${produktua.prezioa} €",
                                 fontSize = 22.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = ArreseBeltza
+                                color = MaterialTheme.colorScheme.onSurface
 
                             )
                         }
@@ -302,14 +304,15 @@ fun ProduktuakPantaila() {
                             modifier = Modifier
                                 .width(500.dp)
                                 .padding(vertical = 10.dp),
-                            color = ArreseBeltza
+                            color = MaterialTheme.colorScheme.onSurface
 
 
                         )
                         Text(
                             text = "Sartu karritora ➝",
-                            color = ArreseGorria,
-                            modifier = Modifier.fillMaxWidth()
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.End
                         )
 
 
