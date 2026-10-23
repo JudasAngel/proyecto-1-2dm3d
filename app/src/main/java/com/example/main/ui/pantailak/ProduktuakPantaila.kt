@@ -35,6 +35,22 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.example.apparrese.R
 import com.example.main.ui.theme.ArreseGorria
+import com.example.main.ui.data.Produktua
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+val productuTest = Produktua(
+    tipo = "Opildegiak",
+    izena = "Gurinezko opila",
+    deskribapena = "Bollo de mantequilla con azucar por rncima",
+    prezioa = 2.40,
+    //argazkia = R.drawable.predeterminada,
+    stocka = 2
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -158,16 +174,83 @@ fun ProduktuakPantaila() {
     ) { paddingValues ->
 
         // CONTENIDO PRINCIPAL
-        Box(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues),
-            contentAlignment = Alignment.Center
+                .padding(paddingValues)
+            .padding(
+                start = 16.dp,
+                end = 16.dp,
+                top = 16.dp
+            ),
+            horizontalAlignment = Alignment.CenterHorizontally
+
         ) {
+            item {
             Text(
-                text = "PRODUKTUAK",
-                color = ArreseGorria
+                text = productuTest.tipo,
+                fontSize = 30.sp,
+                fontFamily = FontFamily.Serif
             )
+            HorizontalDivider(
+                    modifier = Modifier
+                        .width(120.dp)
+                        .padding(vertical = 8.dp)
+            )
+            }
+            item{
+
+//            //Image(
+//                //painter = painterResource(productuTest.argazkia),
+//                contentDescription = productuTest.izena,
+//                modifier = Modifier
+//                    .width(350.dp)
+//                    .height(350.dp)
+//                    .padding(top = 16.dp)
+//            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = productuTest.tipo,
+                color = Color.Gray,
+                fontSize = 14.sp,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    modifier = Modifier.padding(top = 8.dp),
+                    text = productuTest.izena,
+                    fontSize = 22.sp,
+                    fontFamily = FontFamily.Serif
+                )
+
+                Text(
+                    modifier = Modifier.padding(top = 8.dp),
+                    text = "${productuTest.prezioa}€",
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+
+            }
+
+                HorizontalDivider(
+                    modifier = Modifier
+                        .width(500.dp)
+                        .padding(vertical = 10.dp),
+                    color = MaterialTheme.colorScheme.primary
+
+
+                )
+
+
+
+            }
+            }
+
         }
     }
-}

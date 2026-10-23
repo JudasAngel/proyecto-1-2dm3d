@@ -48,6 +48,7 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.identity)
     implementation(libs.material)
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
@@ -56,9 +57,9 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
+    implementation("androidx.compose.material:material-icons-extended")
     implementation(platform("com.google.firebase:firebase-bom:34.19.0"))
-    implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")
-    implementation("androidx.compose.material:material-icons-extended")
+
 }
