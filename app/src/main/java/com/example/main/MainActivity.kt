@@ -19,7 +19,8 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             ArreseesTheme {
-                ProduktuakPantaila()
+                NireAplikazioa()
+
             }
         }
     }

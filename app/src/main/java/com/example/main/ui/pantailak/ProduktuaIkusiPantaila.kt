@@ -100,29 +100,7 @@ fun DetalleProductoScreen() {
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = ArreseGorria)
             )
         },
-        bottomBar = {
-            NavigationBar(
-                modifier = Modifier.height(64.dp),
-                containerColor = ArreseGorria,
-                windowInsets = WindowInsets(0.dp)
-            ) {
-                NavigationBarItem(
-                    selected = false, onClick = {},
-                    icon = { Image(painter = painterResource(R.drawable.home), contentDescription = "Inicio", modifier = Modifier.size(24.dp), colorFilter = ColorFilter.tint(Color.White)) },
-                    colors = NavigationBarItemDefaults.colors(selectedIconColor = Color.White, unselectedIconColor = Color.White, indicatorColor = ArreseGorria)
-                )
-                NavigationBarItem(
-                    selected = true, onClick = {},
-                    icon = { Image(painter = painterResource(R.drawable.shoppingcart), contentDescription = "Productos", modifier = Modifier.size(24.dp), colorFilter = ColorFilter.tint(Color.White)) },
-                    colors = NavigationBarItemDefaults.colors(selectedIconColor = Color.White, unselectedIconColor = Color.White, indicatorColor = ArreseGorria)
-                )
-                NavigationBarItem(
-                    selected = false, onClick = {},
-                    icon = { Image(painter = painterResource(R.drawable.perfil), contentDescription = "Perfil", modifier = Modifier.size(24.dp), colorFilter = ColorFilter.tint(Color.White)) },
-                    colors = NavigationBarItemDefaults.colors(selectedIconColor = Color.White, unselectedIconColor = Color.White, indicatorColor = ArreseGorria)
-                )
-            }
-        }
+
     ) { innerPadding ->
 
         Column(
