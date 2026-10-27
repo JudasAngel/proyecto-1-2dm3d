@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -35,6 +37,9 @@ import androidx.compose.ui.unit.dp
 import com.example.apparrese.R
 import com.example.main.ui.theme.ArreseGorria
 import com.example.main.ui.data.Produktua
+import com.example.main.ui.data.produktuZerrenda
+import androidx.compose.foundation.clickable
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.HorizontalDivider
@@ -53,7 +58,9 @@ import com.example.main.ui.theme.ArreseBeltza
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProduktuakPantaila() {
+fun ProduktuakPantaila(
+    onSaskiClick: () -> Unit = {}
+) {
     var menuAbierto by remember { mutableStateOf(false) }
 
     var produktuak by remember {
@@ -98,6 +105,33 @@ fun ProduktuakPantaila() {
                     )
                 },
                 actions = {
+                    IconButton(
+                        onClick = onSaskiClick
+                    ) {
+                        BadgedBox(
+                            badge = {
+                                if (produktuZerrenda.isNotEmpty()) {
+                                    Badge(
+                                        containerColor = Color.White,
+                                        contentColor = ArreseGorria
+                                    ) {
+                                        Text(
+                                            text = "${produktuZerrenda.size}",
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                            }
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.shoppingcart),
+                                contentDescription = "Karritoa",
+                                tint = Color.White,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+                    }
+
                     Box {
                         IconButton(
                             onClick = { menuAbierto = true }
@@ -311,7 +345,12 @@ fun ProduktuakPantaila() {
                         Text(
                             text = "Sartu karritora ➝",
                             color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    produktuZerrenda.add(produktua.id)
+                                    Toast.makeText(context, "${produktua.izena} karritora gehitu da", Toast.LENGTH_SHORT).show()
+                                },
                             textAlign = TextAlign.End
                         )
 
@@ -344,7 +383,7 @@ fun ProduktuakKargatu(
 
             val lista = documentos.documents.mapNotNull { documento ->
                 try {
-                    documento.toObject(Produktua::class.java)
+                    documento.toObject(Produktua::class.java)?.copy(id = documento.id)
                 } catch (e: Exception) {
                     android.util.Log.e(
                         "FIRESTORE",
