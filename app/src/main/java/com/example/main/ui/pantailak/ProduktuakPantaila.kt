@@ -58,7 +58,9 @@ import com.example.main.ui.theme.ArreseBeltza
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProduktuakPantaila() {
+fun ProduktuakPantaila(
+    onSaskiClick: () -> Unit = {}
+) {
     var menuAbierto by remember { mutableStateOf(false) }
 
     var produktuak by remember {
@@ -104,7 +106,7 @@ fun ProduktuakPantaila() {
                 },
                 actions = {
                     IconButton(
-                        onClick = { }
+                        onClick = onSaskiClick
                     ) {
                         BadgedBox(
                             badge = {

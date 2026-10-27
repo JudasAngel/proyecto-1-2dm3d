@@ -10,6 +10,12 @@ import com.example.main.ui.pantailak.CRUDPantaila
 import com.example.main.ui.pantailak.ProduktuakGehitu
 import com.example.main.ui.pantailak.ProduktuakPantaila
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.example.main.ui.pantailak.SaskiPantaila
+
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -19,7 +25,17 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             ArreseesTheme {
-                ProduktuakPantaila()
+                var unekoPantaila by remember { mutableStateOf("produktuak") }
+
+                when (unekoPantaila) {
+                    "saskia" -> SaskiPantaila(
+                        onHasieraClick = { unekoPantaila = "produktuak" },
+                        onProduktuakClick = { unekoPantaila = "produktuak" }
+                    )
+                    else -> ProduktuakPantaila(
+                        onSaskiClick = { unekoPantaila = "saskia" }
+                    )
+                }
             }
         }
     }
