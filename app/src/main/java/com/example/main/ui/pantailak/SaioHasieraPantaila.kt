@@ -34,6 +34,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.apparrese.R
 import com.example.main.ui.theme.ArreseGorria
+import com.example.main.ui.pantailak.ErregistroPantaila
+import com.example.main.ui.pantailak.ProduktuakPantaila
 import com.google.firebase.FirebaseNetworkException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
@@ -48,6 +50,7 @@ fun SaioHasieraPantaila() {
     var pasahitza by remember { mutableStateOf("") }
     var kargatzen by remember { mutableStateOf(false) }
     var saioaHasita by remember { mutableStateOf(false) }
+    var erregistroaIrekita by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
 
@@ -64,7 +67,6 @@ fun SaioHasieraPantaila() {
         erregistroa: Boolean
     ): String {
         return when (errorea) {
-
             is FirebaseAuthUserCollisionException ->
                 "Email hau dagoeneko erregistratuta dago."
 
@@ -95,191 +97,142 @@ fun SaioHasieraPantaila() {
 
     Scaffold { paddingValues ->
 
-        if (saioaHasita) {
+        when {
+            saioaHasita -> {
+                ProduktuakPantaila()
+            }
 
-            // Pantaila erakutsi saioa behar bezala hastean
-            DetalleProductoScreen()
-
-        } else {
-
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Top
-            ) {
-
-                // Logo Arrese
-                Image(
-                    painter = painterResource(R.drawable.arrese),
-                    contentDescription = "Arrese logoa",
-                    modifier = Modifier.size(250.dp)
+            erregistroaIrekita -> {
+                ErregistroPantaila(
+                    modifier = Modifier.padding(paddingValues),
+                    onBack = {
+                        erregistroaIrekita = false
+                    }
                 )
+            }
 
-                // Emaila
-                OutlinedTextField(
-                    value = email,
-                    onValueChange = { email = it },
-                    singleLine = true,
-                    label = {
-                        Text("Emaila")
-                    },
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Email
-                    ),
-                    enabled = !kargatzen,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedBorderColor = ArreseGorria,
-                        focusedBorderColor = ArreseGorria
-                    )
-                )
-
-                // Pasahitza
-                OutlinedTextField(
-                    value = pasahitza,
-                    onValueChange = { pasahitza = it },
-                    singleLine = true,
-                    label = {
-                        Text("Pasahitza")
-                    },
-                    visualTransformation =
-                        PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Password
-                    ),
-                    enabled = !kargatzen,
-                    modifier = Modifier.padding(top = 20.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedBorderColor = ArreseGorria,
-                        focusedBorderColor = ArreseGorria
-                    )
-                )
-
-                // Botones
-                Row(
-                    modifier = Modifier.padding(top = 40.dp),
-                    horizontalArrangement = Arrangement.spacedBy(26.dp)
+            else -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Top
                 ) {
 
-                    // Sartu: iniciar sesión
-                    Button(
-                        onClick = {
-                            if (email.isBlank() || pasahitza.isBlank()) {
-                                erakutsiToast(
-                                    "Bete emaila eta pasahitza."
-                                )
-                            } else {
-
-                                kargatzen = true
-
-                                FirebaseAuth.getInstance()
-                                    .signInWithEmailAndPassword(
-                                        email.trim(),
-                                        pasahitza
-                                    )
-                                    .addOnCompleteListener { task ->
-
-                                        kargatzen = false
-                                        if (task.isSuccessful) {
-                                            erakutsiToast(
-                                                "Saioa behar bezala hasi da!"
-                                            )
-
-                                            // Abrir la pantalla de bienvenida
-                                            saioaHasita = true
-
-                                        } else {
-
-                                            erakutsiToast(
-                                                firebaseErrorea(
-                                                    task.exception,
-                                                    false
-                                                )
-                                            )
-                                        }
-                                    }
-                            }
-                        },
-                        enabled = !kargatzen,
-                        modifier = Modifier.width(130.dp),
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = ArreseGorria,
-                            contentColor = Color.White
-                        )
-                    ) {
-                        Text("Sartu")
-                    }
-
-                    // Erregistratu: crear cuenta
-                    Button(
-                        onClick = {
-
-                            if (email.isBlank() || pasahitza.isBlank()) {
-
-                                erakutsiToast(
-                                    "Bete emaila eta pasahitza."
-                                )
-
-                            } else if (pasahitza.length < 6) {
-
-                                erakutsiToast(
-                                    "Pasahitzak gutxienez 6 karaktere izan behar ditu."
-                                )
-
-                            } else {
-
-                                kargatzen = true
-
-                                FirebaseAuth.getInstance()
-                                    .createUserWithEmailAndPassword(
-                                        email.trim(),
-                                        pasahitza
-                                    )
-                                    .addOnCompleteListener { task ->
-
-                                        kargatzen = false
-
-                                        if (task.isSuccessful) {
-                                            erakutsiToast(
-                                                "Erregistroa behar bezala egin da!"
-                                            )
-
-                                            saioaHasita = true
-
-                                        } else {
-                                            erakutsiToast(
-                                                firebaseErrorea(
-                                                    task.exception,
-                                                    true
-                                                )
-                                            )
-                                        }
-                                    }
-                            }
-                        },
-                        enabled = !kargatzen,
-                        modifier = Modifier.width(130.dp),
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = ArreseGorria,
-                            contentColor = Color.White
-                        )
-                    ) {
-                        Text("Erregistratu")
-                    }
-                }
-
-                Spacer(
-                    modifier = Modifier.padding(top = 16.dp)
-                )
-
-                // Indicador de carga
-                if (kargatzen) {
-                    CircularProgressIndicator(
-                        color = ArreseGorria
+                    Image(
+                        painter = painterResource(R.drawable.arrese),
+                        contentDescription = "Arrese logoa",
+                        modifier = Modifier.size(250.dp)
                     )
+
+                    OutlinedTextField(
+                        value = email,
+                        onValueChange = { email = it },
+                        singleLine = true,
+                        label = { Text("Emaila") },
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Email
+                        ),
+                        enabled = !kargatzen,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            unfocusedBorderColor = ArreseGorria,
+                            focusedBorderColor = ArreseGorria
+                        )
+                    )
+
+                    OutlinedTextField(
+                        value = pasahitza,
+                        onValueChange = { pasahitza = it },
+                        singleLine = true,
+                        label = { Text("Pasahitza") },
+                        visualTransformation =
+                            PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Password
+                        ),
+                        enabled = !kargatzen,
+                        modifier = Modifier.padding(top = 20.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            unfocusedBorderColor = ArreseGorria,
+                            focusedBorderColor = ArreseGorria
+                        )
+                    )
+
+                    Row(
+                        modifier = Modifier.padding(top = 40.dp),
+                        horizontalArrangement = Arrangement.spacedBy(26.dp)
+                    ) {
+
+                        Button(
+                            onClick = {
+                                if (email.isBlank() || pasahitza.isBlank()) {
+                                    erakutsiToast(
+                                        "Bete emaila eta pasahitza."
+                                    )
+                                } else {
+                                    kargatzen = true
+
+                                    FirebaseAuth.getInstance()
+                                        .signInWithEmailAndPassword(
+                                            email.trim(),
+                                            pasahitza
+                                        )
+                                        .addOnCompleteListener { task ->
+                                            kargatzen = false
+
+                                            if (task.isSuccessful) {
+                                                erakutsiToast(
+                                                    "Saioa behar bezala hasi da!"
+                                                )
+                                                saioaHasita = true
+                                            } else {
+                                                erakutsiToast(
+                                                    firebaseErrorea(
+                                                        task.exception,
+                                                        false
+                                                    )
+                                                )
+                                            }
+                                        }
+                                }
+                            },
+                            enabled = !kargatzen,
+                            modifier = Modifier.width(130.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = ArreseGorria,
+                                contentColor = Color.White
+                            )
+                        ) {
+                            Text("Sartu")
+                        }
+
+                        Button(
+                            onClick = {
+                                erregistroaIrekita = true
+                            },
+                            enabled = !kargatzen,
+                            modifier = Modifier.width(130.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = ArreseGorria,
+                                contentColor = Color.White
+                            )
+                        ) {
+                            Text("Erregistratu")
+                        }
+                    }
+
+                    Spacer(
+                        modifier = Modifier.padding(top = 16.dp)
+                    )
+
+                    if (kargatzen) {
+                        CircularProgressIndicator(
+                            color = ArreseGorria
+                        )
+                    }
                 }
             }
         }
