@@ -221,6 +221,37 @@ fun ProduktuakPantaila() {
     // 3. PANTAILAREN DISEINUA
     // --------------------------------------------------
 
+    var produktuak by remember {
+        mutableStateOf<List<Produktua>>(emptyList())
+    }
+    var motak by remember {
+        mutableStateOf<Map<Int, String>>(emptyMap())
+    }
+    var errorea by remember {
+        mutableStateOf<String?>(null)
+    }
+    //es par cargar los datso al iciiarse la pantalla osea al construir la parte visual
+    LaunchedEffect(Unit) {
+        //funcion de mota para consegir el tipo de producto
+        KargatuMotak { mapa ->
+            motak = mapa
+        }
+        //carga el resultado de la lista de datos y el porsible masejae de error qu epueda dar
+        ProduktuakKargatu(
+            resultado = { lista ->
+                produktuak = lista
+            },
+            errorea = { mensaje ->
+                errorea = mensaje
+            }
+        )
+
+    }
+
+    val context = LocalContext.current
+
+
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -233,6 +264,33 @@ fun ProduktuakPantaila() {
                     )
                 },
                 actions = {
+                    IconButton(
+                        onClick = onSaskiClick
+                    ) {
+                        BadgedBox(
+                            badge = {
+                                if (produktuZerrenda.isNotEmpty()) {
+                                    Badge(
+                                        containerColor = Color.White,
+                                        contentColor = ArreseGorria
+                                    ) {
+                                        Text(
+                                            text = "${produktuZerrenda.size}",
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                            }
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.shoppingcart),
+                                contentDescription = "Karritoa",
+                                tint = Color.White,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+                    }
+
                     Box {
                         IconButton(
                             onClick = {

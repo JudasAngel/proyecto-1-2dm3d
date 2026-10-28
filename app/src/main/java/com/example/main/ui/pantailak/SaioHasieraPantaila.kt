@@ -43,8 +43,9 @@ import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException
 
+
 @Composable
-fun SaioHasieraPantaila() {
+fun SaioHasieraPantaila(onLoginExitoso: () -> Unit) {
 
     var email by remember { mutableStateOf("") }
     var pasahitza by remember { mutableStateOf("") }
@@ -237,4 +238,4 @@ fun SaioHasieraPantaila() {
             }
         }
     }
-}
+
