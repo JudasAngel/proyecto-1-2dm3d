@@ -59,11 +59,13 @@ fun ProduktuakPantaila() {
     var errorea by remember {
         mutableStateOf<String?>(null)
     }
-
+    //es par cargar los datso al iciiarse la pantalla osea al construir la parte visual
     LaunchedEffect(Unit) {
+        //funcion de mota para consegir el tipo de producto
         KargatuMotak { mapa ->
             motak = mapa
         }
+        //carga el resultado de la lista de datos y el porsible masejae de error qu epueda dar
         ProduktuakKargatu(
             resultado = { lista ->
                 produktuak = lista
@@ -164,7 +166,7 @@ fun ProduktuakPantaila() {
                 }
             } else if (produktuak.isEmpty()) {
                 item {
-                    Text("Cargatzen ...")
+                    Text("Kargatzen ...")
                 }
             } else {
 
