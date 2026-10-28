@@ -12,7 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -201,8 +201,7 @@ fun ProduktuakPantaila(    onSaskiClick: () -> Unit = {}
                         izena = nombre,
                         deskribapena = doc.getString("deskribapena") ?: "",
                         prezioa = precio,
-                        argazkia = null
-                    )
+                        argazkia = doc.getString("argazkia")                    )
                 }
 
                 cargandoProductos = false
@@ -507,9 +506,29 @@ fun ProductuItem(
         Column(
             modifier = Modifier.fillMaxWidth()
         ) {
+
+            val context = LocalContext.current
+            val imageResId = producto.argazkia?.let {
+                context.resources.getIdentifier(
+                    it.lowercase(Locale.ROOT),
+                    "drawable",
+                    context.packageName
+                )
+            } ?: 0
+
+            android.util.Log.d(
+                "IMG",
+                "Producto: ${producto.izena}, " +
+                        "Imagen: ${producto.argazkia}, ID: $imageResId"
+            )
+
             Image(
                 painter = painterResource(
-                    id = R.drawable.predeterminada
+                    id = if (imageResId != 0) {
+                        imageResId
+                    } else {
+                        R.drawable.predeterminada
+                    }
                 ),
                 contentDescription = producto.izena,
                 contentScale = ContentScale.Crop,
@@ -517,6 +536,7 @@ fun ProductuItem(
                     .fillMaxWidth()
                     .height(190.dp)
             )
+
 
             Column(
                 modifier = Modifier.padding(16.dp)
