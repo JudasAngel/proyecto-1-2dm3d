@@ -25,6 +25,8 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             ArreseesTheme {
+                NireAplikazioa()
+
                 var unekoPantaila by remember { mutableStateOf("produktuak") }
 
                 when (unekoPantaila) {

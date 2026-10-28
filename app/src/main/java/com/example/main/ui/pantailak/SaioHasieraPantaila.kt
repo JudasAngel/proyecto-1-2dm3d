@@ -46,12 +46,11 @@ import com.google.firebase.auth.FirebaseAuthWeakPasswordException
 
 
 @Composable
-fun SaioHasieraPantaila() {
+fun SaioHasieraPantaila(onLoginExitoso: () -> Unit) {
 
     var email by remember { mutableStateOf("") }
     var pasahitza by remember { mutableStateOf("") }
     var kargatzen by remember { mutableStateOf(false) }
-    var saioaHasita by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
 
@@ -99,12 +98,7 @@ fun SaioHasieraPantaila() {
 
     Scaffold { paddingValues ->
 
-        if (saioaHasita) {
 
-            // Pantaila erakutsi saioa behar bezala hastean
-            DetalleProductoScreen()
-
-        } else {
 
             Column(
                 modifier = Modifier
@@ -207,8 +201,7 @@ fun SaioHasieraPantaila() {
                                             )
 
                                             // saioaHasi pantaila zabaldu
-                                            saioaHasita = true
-
+                                            onLoginExitoso()
                                         } else {
 
                                             erakutsiToast(
@@ -266,8 +259,7 @@ fun SaioHasieraPantaila() {
                                                 "Erregistroa behar bezala egin da!"
                                             )
 
-                                            saioaHasita = true
-
+                                            onLoginExitoso()
                                         } else {
                                             erakutsiToast(
                                                 firebaseErrorea(
@@ -304,4 +296,4 @@ fun SaioHasieraPantaila() {
             }
         }
     }
-}
+
