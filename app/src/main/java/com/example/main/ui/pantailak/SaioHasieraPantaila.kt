@@ -50,7 +50,7 @@ fun SaioHasieraPantaila(onLoginExitoso: () -> Unit) {
     var email by remember { mutableStateOf("") }
     var pasahitza by remember { mutableStateOf("") }
     var kargatzen by remember { mutableStateOf(false) }
-    var saioaHasita by remember { mutableStateOf(false) }
+    //var saioaHasita by remember { mutableStateOf(false) }
     var erregistroaIrekita by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
@@ -99,9 +99,9 @@ fun SaioHasieraPantaila(onLoginExitoso: () -> Unit) {
     Scaffold { paddingValues ->
 
         when {
-            saioaHasita -> {
+            /*saioaHasita -> {
                 ProduktuakPantaila()
-            }
+            }*/
 
             erregistroaIrekita -> {
                 ErregistroPantaila(
@@ -186,7 +186,8 @@ fun SaioHasieraPantaila(onLoginExitoso: () -> Unit) {
                                                 erakutsiToast(
                                                     "Saioa behar bezala hasi da!"
                                                 )
-                                                saioaHasita = true
+                                                onLoginExitoso()
+                                                //saioaHasita = true
                                             } else {
                                                 erakutsiToast(
                                                     firebaseErrorea(
@@ -238,4 +239,4 @@ fun SaioHasieraPantaila(onLoginExitoso: () -> Unit) {
             }
         }
     }
-
+}

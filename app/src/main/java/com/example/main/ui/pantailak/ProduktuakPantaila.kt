@@ -19,10 +19,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.apparrese.R
 import com.example.main.ui.theme.ArreseGorria
-import com.example.objetos.ui.`class`.Productu
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import java.util.Locale
+import com.example.main.ui.data.Produktua
+import com.example.main.ui.data.produktuZerrenda
 
 // Firestore-ko kategoria baten informazioa gordetzen du.
 data class Categoria(
@@ -32,7 +33,8 @@ data class Categoria(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProduktuakPantaila() {
+fun ProduktuakPantaila(    onSaskiClick: () -> Unit = {}
+) {
 
     // Kategoria-menua irekita dagoen ala ez kontrolatzen du.
     var menuAbierto by remember {
@@ -60,7 +62,7 @@ fun ProduktuakPantaila() {
 
     // Produktuen zerrenda eta haien karga-egoerak.
     var productos by remember {
-        mutableStateOf<List<Productu>>(emptyList())
+        mutableStateOf<List< Produktua>>(emptyList())
     }
 
     var cargandoProductos by remember {
@@ -136,7 +138,6 @@ fun ProduktuakPantaila() {
     // --------------------------------------------------
 
     DisposableEffect(db, categoriaSeleccionada, categorias) {
-
         var consulta: Query = db.collection("produktuak")
 
         val categoria = categoriaSeleccionada
@@ -192,13 +193,15 @@ fun ProduktuakPantaila() {
                         ?: nombreCategoria
                         ?: "Kategoriarik gabe"
 
-                    Productu(
+                    val motaNumero = motaId?.toIntOrNull() ?: 0
+
+                    Produktua(
                         id = id,
-                        tipo = tipo,
+                        mota = motaNumero,
                         izena = nombre,
                         deskribapena = doc.getString("deskribapena") ?: "",
                         prezioa = precio,
-                        argazkia = R.drawable.predeterminada
+                        argazkia = null
                     )
                 }
 
@@ -221,34 +224,8 @@ fun ProduktuakPantaila() {
     // 3. PANTAILAREN DISEINUA
     // --------------------------------------------------
 
-    var produktuak by remember {
-        mutableStateOf<List<Produktua>>(emptyList())
-    }
-    var motak by remember {
-        mutableStateOf<Map<Int, String>>(emptyMap())
-    }
-    var errorea by remember {
-        mutableStateOf<String?>(null)
-    }
-    //es par cargar los datso al iciiarse la pantalla osea al construir la parte visual
-    LaunchedEffect(Unit) {
-        //funcion de mota para consegir el tipo de producto
-        KargatuMotak { mapa ->
-            motak = mapa
-        }
-        //carga el resultado de la lista de datos y el porsible masejae de error qu epueda dar
-        ProduktuakKargatu(
-            resultado = { lista ->
-                produktuak = lista
-            },
-            errorea = { mensaje ->
-                errorea = mensaje
-            }
-        )
 
-    }
 
-    val context = LocalContext.current
 
 
 
@@ -396,67 +373,6 @@ fun ProduktuakPantaila() {
             )
         },
 
-        bottomBar = {
-            NavigationBar(
-                modifier = Modifier.height(64.dp),
-                containerColor = ArreseGorria,
-                windowInsets = WindowInsets(0.dp)
-            ) {
-                NavigationBarItem(
-                    selected = false,
-                    onClick = {},
-                    icon = {
-                        Image(
-                            painter = painterResource(R.drawable.home),
-                            contentDescription = "Hasiera",
-                            modifier = Modifier.size(24.dp),
-                            colorFilter = ColorFilter.tint(Color.White)
-                        )
-                    },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = Color.White,
-                        unselectedIconColor = Color.White,
-                        indicatorColor = ArreseGorria
-                    )
-                )
-
-                NavigationBarItem(
-                    selected = true,
-                    onClick = {},
-                    icon = {
-                        Image(
-                            painter = painterResource(R.drawable.shoppingcart),
-                            contentDescription = "Produktuak",
-                            modifier = Modifier.size(24.dp),
-                            colorFilter = ColorFilter.tint(Color.White)
-                        )
-                    },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = Color.White,
-                        unselectedIconColor = Color.White,
-                        indicatorColor = ArreseGorria
-                    )
-                )
-
-                NavigationBarItem(
-                    selected = false,
-                    onClick = {},
-                    icon = {
-                        Image(
-                            painter = painterResource(R.drawable.perfil),
-                            contentDescription = "Profila",
-                            modifier = Modifier.size(24.dp),
-                            colorFilter = ColorFilter.tint(Color.White)
-                        )
-                    },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = Color.White,
-                        unselectedIconColor = Color.White,
-                        indicatorColor = ArreseGorria
-                    )
-                )
-            }
-        }
     ) { paddingValues ->
 
         LazyColumn(
@@ -555,7 +471,15 @@ fun ProduktuakPantaila() {
                     items = productos,
                     key = { it.id }
                 ) { producto ->
-                    ProductuItem(producto)
+
+                    val tipo = categorias.find {
+                        it.id == producto.mota.toString()
+                    }?.izena ?: "Kategoriarik gabe"
+
+                    ProductuItem(
+                        producto = producto,
+                        tipo = tipo
+                    )
                 }
             }
         }
@@ -564,7 +488,10 @@ fun ProduktuakPantaila() {
 
 // Produktu-txartela: irudia, kategoria, izena eta prezioa.
 @Composable
-fun ProductuItem(producto: Productu) {
+fun ProductuItem(
+    producto: Produktua,
+    tipo: String
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -581,7 +508,9 @@ fun ProductuItem(producto: Productu) {
             modifier = Modifier.fillMaxWidth()
         ) {
             Image(
-                painter = painterResource(id = producto.argazkia),
+                painter = painterResource(
+                    id = R.drawable.predeterminada
+                ),
                 contentDescription = producto.izena,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
@@ -593,38 +522,32 @@ fun ProductuItem(producto: Productu) {
                 modifier = Modifier.padding(16.dp)
             ) {
                 Text(
-                    text = producto.tipo,
+                    text = tipo,
                     style = MaterialTheme.typography.labelMedium,
                     color = ArreseGorria
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = producto.izena,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.weight(1f)
-                    )
+                Text(
+                    text = producto.izena,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
 
-                    Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
-                    Text(
-                        text = String.format(
-                            Locale("es", "ES"),
-                            "%.2f €",
-                            producto.prezioa
-                        ),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = ArreseGorria
-                    )
-                }
+
+                Text(
+                    text = String.format(
+                        Locale("es", "ES"),
+                        "%.2f €",
+                        producto.prezioa
+                    ),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = ArreseGorria
+                )
             }
         }
     }
