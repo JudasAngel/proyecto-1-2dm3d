@@ -53,7 +53,6 @@ import androidx.compose.ui.text.style.TextAlign
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProduktuakPantaila(
-    onSaskiClick: () -> Unit = {}
 ) {
     var menuAbierto by remember { mutableStateOf(false) }
 
@@ -101,32 +100,6 @@ fun ProduktuakPantaila(
                     )
                 },
                 actions = {
-                    IconButton(
-                        onClick = onSaskiClick
-                    ) {
-                        BadgedBox(
-                            badge = {
-                                if (produktuZerrenda.isNotEmpty()) {
-                                    Badge(
-                                        containerColor = Color.White,
-                                        contentColor = ArreseGorria
-                                    ) {
-                                        Text(
-                                            text = "${produktuZerrenda.size}",
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
-                                }
-                            }
-                        ) {
-                            Icon(
-                                painter = painterResource(R.drawable.shoppingcart),
-                                contentDescription = "Karritoa",
-                                tint = Color.White,
-                                modifier = Modifier.size(28.dp)
-                            )
-                        }
-                    }
 
                     Box {
                         IconButton(

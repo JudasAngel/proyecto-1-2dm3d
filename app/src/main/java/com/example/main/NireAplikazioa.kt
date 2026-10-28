@@ -93,7 +93,7 @@ fun NireAplikazioa() {
 
             // CARRITO: pantalla provisional.
             composable("carrito") {
-                Text(text = "Aquí aparecerán los productos del carrito")
+                SaskiPantaila()
             }
 
             // CRUD: visible para todos por ahora.

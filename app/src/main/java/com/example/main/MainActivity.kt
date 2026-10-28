@@ -26,18 +26,6 @@ class MainActivity : ComponentActivity() {
         setContent {
             ArreseesTheme {
                 NireAplikazioa()
-
-                var unekoPantaila by remember { mutableStateOf("produktuak") }
-
-                when (unekoPantaila) {
-                    "saskia" -> SaskiPantaila(
-                        onHasieraClick = { unekoPantaila = "produktuak" },
-                        onProduktuakClick = { unekoPantaila = "produktuak" }
-                    )
-                    else -> ProduktuakPantaila(
-                        onSaskiClick = { unekoPantaila = "saskia" }
-                    )
-                }
             }
         }
     }
