@@ -353,12 +353,13 @@ fun ProduktuakGehitu() {
                                             Toast.makeText(context, "Errorea. Produktu hau ya dago sartuta", Toast.LENGTH_LONG).show()
                                         } else {
                                             // Produktua ez badago gordetzea
-                                            val produktua = hashMapOf(
+                                            val produktua = hashMapOf<String, Any>(
                                                 "izena" to izena.trim(),
                                                 "deskribapena" to deskribapena,
-                                                "stock" to stocka,
-                                                "prezioa" to prezioa,
-                                                "mota" to mota!!.id
+                                                "stock" to (stocka.toIntOrNull() ?: stocka),
+                                                "prezioa" to (prezioa.toDoubleOrNull() ?: prezioa),
+                                                "mota" to mota!!.id,
+                                                "argazkia" to argazkia
                                             )
 
                                             db.collection("produktuak")

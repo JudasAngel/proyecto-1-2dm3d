@@ -181,12 +181,13 @@ fun ProduktuakPantaila(
                     val nombre = doc.getString("izena")
                         ?: return@mapNotNull null
 
-                    val precio = doc.getDouble("prezioa")
-                        ?: doc.getLong("prezioa")?.toDouble()
+                    val precio = (doc.get("prezioa") as? Number)?.toDouble()
+                        ?: doc.getString("prezioa")?.toDoubleOrNull()
                         ?: 0.0
 
-                    val motaId = doc.getLong("mota")?.toString()
-                        ?: doc.getString("mota")
+                    val rawMota = doc.get("mota")
+                    val motaId = (rawMota as? Number)?.toString()
+                        ?: (rawMota as? String)
 
                     val nombreCategoria = categorias.find {
                         it.id == motaId
@@ -196,7 +197,9 @@ fun ProduktuakPantaila(
                         ?: nombreCategoria
                         ?: "Kategoriarik gabe"
 
-                    val motaNumero = motaId?.toIntOrNull() ?: 0
+                    val motaNumero = (rawMota as? Number)?.toInt()
+                        ?: (rawMota as? String)?.toIntOrNull()
+                        ?: 0
 
                     Produktua(
                         id = id,
@@ -204,7 +207,8 @@ fun ProduktuakPantaila(
                         izena = nombre,
                         deskribapena = doc.getString("deskribapena") ?: "",
                         prezioa = precio,
-                        argazkia = doc.getString("argazkia")                    )
+                        argazkia = doc.getString("argazkia")
+                    )
                 }
 
                 cargandoProductos = false
