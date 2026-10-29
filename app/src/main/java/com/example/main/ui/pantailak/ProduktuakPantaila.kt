@@ -36,7 +36,7 @@ data class Categoria(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProduktuakPantaila(    onSaskiClick: () -> Unit = {}
+fun ProduktuakPantaila(
 ) {
 
     // Kategoria-menua irekita dagoen ala ez kontrolatzen du.

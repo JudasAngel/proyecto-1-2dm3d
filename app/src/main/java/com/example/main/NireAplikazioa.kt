@@ -18,6 +18,7 @@ import com.example.main.ui.pantailak.CRUDPantaila
 import com.example.main.ui.pantailak.ProduktuakPantaila
 import com.example.login.ui.pantailak.SaioHasieraPantaila
 import com.example.main.ui.pantailak.ErregistroPantaila
+import com.example.main.ui.pantailak.ProduktuakGehitu
 import com.example.main.ui.pantailak.SaskiPantaila
 import com.google.firebase.auth.FirebaseAuth
 
@@ -96,13 +97,7 @@ fun NireAplikazioa() {
             }
 
             composable("home") {
-                ProduktuakPantaila(
-                    onSaskiClick = {
-                        navController.navigate("carrito") {
-                            launchSingleTop = true
-                        }
-                    }
-                )
+                ProduktuakPantaila()
             }
 
             composable("carrito") {
@@ -110,7 +105,22 @@ fun NireAplikazioa() {
             }
 
             composable("crud") {
-                CRUDPantaila()
+                CRUDPantaila(
+                    onAdd = {
+                        navController.navigate("add")
+                    },
+                    onEdit = { docId ->
+                        navController.navigate("edit/$docId")
+                    }
+                )
+            }
+
+            composable("add") {
+                ProduktuakGehitu()
+            }
+
+            composable("edit") {
+                ProduktuakGehitu()
             }
         }
     }
