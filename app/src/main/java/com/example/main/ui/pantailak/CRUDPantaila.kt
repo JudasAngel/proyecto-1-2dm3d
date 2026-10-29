@@ -18,9 +18,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -39,7 +41,10 @@ import androidx.compose.ui.unit.sp
 import com.google.firebase.firestore.FirebaseFirestore
 
 @Composable
-fun CRUDPantaila() {
+fun CRUDPantaila(
+    onAdd: () -> Unit = {},
+    onEdit: (String) -> Unit = {}
+) {
     var productList by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
     val context = LocalContext.current
     val activity = context as? Activity
@@ -69,32 +74,22 @@ fun CRUDPantaila() {
         kargatuDatuak()
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = { }) {
+    Scaffold(
+        floatingActionButton = {
+            FloatingActionButton(onClick = onAdd) {
                 Icon(
                     imageVector = Icons.Default.Add,
-                    contentDescription = "Gehitu",
-                    modifier = Modifier.size(28.dp),
-                    tint = Color.Black
+                    contentDescription = "Gehitu"
                 )
             }
         }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
+    ) { innerPadding ->
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState()),
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState())
         ) {
             if (productList.isEmpty()) {
                 Text(
@@ -117,6 +112,7 @@ fun CRUDPantaila() {
                         name = izena,
                         price = prezioa,
                         stock = stock,
+                        onEdit = { onEdit(docId) },
                         onDelete = {
                             if (docId.isNotEmpty() && activity != null) {
                                 // Thread para borrar
@@ -142,7 +138,14 @@ fun CRUDPantaila() {
 }
 
 @Composable
-fun ProductRow(name: String, price: Double, stock: Int, onDelete: () -> Unit, modifier: Modifier = Modifier) {
+fun ProductRow(
+    name: String,
+    price: Double,
+    stock: Int,
+    onEdit: () -> Unit = {},
+    onDelete: () -> Unit = {},
+    modifier: Modifier = Modifier
+) {
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -181,7 +184,7 @@ fun ProductRow(name: String, price: Double, stock: Int, onDelete: () -> Unit, mo
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(
-                onClick = { },
+                onClick = onEdit,
                 modifier = Modifier.size(30.dp)
             ) {
                 Icon(

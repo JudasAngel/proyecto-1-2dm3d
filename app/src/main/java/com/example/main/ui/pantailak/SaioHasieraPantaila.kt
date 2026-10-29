@@ -184,7 +184,7 @@ fun SaioHasieraPantaila(onLoginExitoso: () -> Unit) {
 
                                             if (task.isSuccessful) {
                                                 erakutsiToast(
-                                                    "Saioa behar bezala hasi da!"
+                                                    "Saioa hasi da!"
                                                 )
                                                 onLoginExitoso()
                                                 //saioaHasita = true
