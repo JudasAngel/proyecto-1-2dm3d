@@ -1,6 +1,8 @@
 package com.example.main.ui.pantailak
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -16,6 +18,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.apparrese.R
 import com.example.main.ui.theme.ArreseGorria
@@ -240,33 +243,6 @@ fun ProduktuakPantaila(    onSaskiClick: () -> Unit = {}
                     )
                 },
                 actions = {
-                    IconButton(
-                        onClick = onSaskiClick
-                    ) {
-                        BadgedBox(
-                            badge = {
-                                if (produktuZerrenda.isNotEmpty()) {
-                                    Badge(
-                                        containerColor = Color.White,
-                                        contentColor = ArreseGorria
-                                    ) {
-                                        Text(
-                                            text = "${produktuZerrenda.size}",
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
-                                }
-                            }
-                        ) {
-                            Icon(
-                                painter = painterResource(R.drawable.shoppingcart),
-                                contentDescription = "Karritoa",
-                                tint = Color.White,
-                                modifier = Modifier.size(28.dp)
-                            )
-                        }
-                    }
-
                     Box {
                         IconButton(
                             onClick = {
@@ -557,17 +533,34 @@ fun ProductuItem(
 
                 Spacer(modifier = Modifier.height(6.dp))
 
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ){
+                    Text(
+                        text = String.format(
+                            Locale("es", "ES"),
+                            "%.2f €",
+                            producto.prezioa
+                        ),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = ArreseGorria
+                    )
 
-                Text(
-                    text = String.format(
-                        Locale("es", "ES"),
-                        "%.2f €",
-                        producto.prezioa
-                    ),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = ArreseGorria
-                )
+                    Text(
+                        text = "Sartu karritora ➝",
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                produktuZerrenda.add(producto.id)
+                                Toast.makeText(context, "${producto.izena} karritora gehitu da", Toast.LENGTH_SHORT).show()
+                            },
+                        textAlign = TextAlign.End
+                    )
+                }
             }
         }
     }

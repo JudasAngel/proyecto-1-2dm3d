@@ -27,6 +27,9 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Scaffold
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.rememberNavController
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -106,9 +109,14 @@ fun SaskiPantaila(
     val bidalketa = if (saskiItems.isNotEmpty()) 2.50 else 0.0
     val totala = subtotal + bidalketa
 
-    Column(
-        modifier = modifier.fillMaxSize()
-    ) {
+    Scaffold(
+        modifier = modifier
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
         Text(
             text = "Zure Saskia",
             fontSize = 26.sp,
@@ -238,6 +246,7 @@ fun SaskiPantaila(
             }
         }
     }
+}
 }
 
 @Composable
