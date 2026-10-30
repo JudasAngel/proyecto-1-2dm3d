@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.sp
 import com.example.apparrese.R
 import com.example.main.ui.theme.ArreseGorria
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.SubdirectoryArrowLeft
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.runtime.LaunchedEffect
@@ -55,7 +56,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProduktuakGehitu() {
+fun ProduktuakGehitu(onAtzeraEgin: () -> Unit) {
     var menuAbierto by remember { mutableStateOf(false) }
     var izena by remember { mutableStateOf("") }
     var deskribapena by remember { mutableStateOf("") }
@@ -410,6 +411,20 @@ fun ProduktuakGehitu() {
                             fontSize = 20.sp
                         )
                     }
+                }
+                IconButton(
+                    onClick = onAtzeraEgin
+                    //modifier = Modifier.size(30.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.SubdirectoryArrowLeft,
+                        contentDescription = "Editatu",
+                        modifier =
+                            Modifier.size(40.dp)
+                                .padding(top = 10.dp),
+
+                        tint = Color.Red
+                    )
                 }
 
             }

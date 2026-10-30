@@ -2,7 +2,7 @@ package com.example.main.ui.data
 
 import androidx.compose.runtime.mutableStateListOf
 
-val produktuZerrenda = mutableStateListOf<String>()
+val produktuZerrenda = mutableStateListOf<String>() //begiratu ez dago ond
 
 data class Produktua(
     val id: String = "",

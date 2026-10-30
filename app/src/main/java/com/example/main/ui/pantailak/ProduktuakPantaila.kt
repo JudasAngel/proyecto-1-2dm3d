@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.apparrese.R
+import com.example.main.ui.data.Kategoria
 import com.example.main.ui.theme.ArreseGorria
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -28,49 +29,28 @@ import java.util.Locale
 import com.example.main.ui.data.Produktua
 import com.example.main.ui.data.produktuZerrenda
 
-// Firestore-ko kategoria baten informazioa gordetzen du.
-data class Categoria(
-    val id: String,
-    val izena: String
-)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProduktuakPantaila(
-) {
+fun ProduktuakPantaila() {
 
     // Kategoria-menua irekita dagoen ala ez kontrolatzen du.
-    var menuAbierto by remember {
-        mutableStateOf(false)
-    }
+    var menuAbierto by remember { mutableStateOf(false) }
 
     // Firestore-tik lortutako kategoriak gordetzen ditu.
-    var categorias by remember {
-        mutableStateOf<List<Categoria>>(emptyList())
-    }
+    var categorias by remember { mutableStateOf<List<Kategoria>>(emptyList()) }
 
     // null bada, produktu guztiak erakusten dira.
-    var categoriaSeleccionada by remember {
-        mutableStateOf<Categoria?>(null)
-    }
+    var categoriaSeleccionada by remember { mutableStateOf<Kategoria?>(null) }
 
     // Kategorien karga- eta errore-egoerak.
-    var cargandoTipos by remember {
-        mutableStateOf(true)
-    }
+    var cargandoTipos by remember { mutableStateOf(true) }
 
-    var errorTipos by remember {
-        mutableStateOf(false)
-    }
+    var errorTipos by remember { mutableStateOf(false) }
 
     // Produktuen zerrenda eta haien karga-egoerak.
-    var productos by remember {
-        mutableStateOf<List< Produktua>>(emptyList())
-    }
+    var productos by remember { mutableStateOf<List< Produktua>>(emptyList()) }
 
-    var cargandoProductos by remember {
-        mutableStateOf(true)
-    }
+    var cargandoProductos by remember { mutableStateOf(true) }
 
     var errorProductos by remember {
         mutableStateOf(false)
@@ -81,11 +61,7 @@ fun ProduktuakPantaila(
         FirebaseFirestore.getInstance()
     }
 
-    // --------------------------------------------------
-    // 1. KATEGORIAK KARGATZEA
-    // Kolekzioa: product_type
-    // Erabilitako eremua: izena
-    // --------------------------------------------------
+    // KATEGORIAK KARGATZEA
 
     DisposableEffect(db) {
 
@@ -111,7 +87,7 @@ fun ProduktuakPantaila(
                             val nombre = doc.getString("izena")
 
                             if (nombre != null) {
-                                Categoria(
+                                Kategoria(
                                     id = doc.id,
                                     izena = nombre
                                 )
@@ -135,11 +111,7 @@ fun ProduktuakPantaila(
         }
     }
 
-    // --------------------------------------------------
-    // 2. PRODUKTUAK KARGATZEA
-    // Kolekzioa: produktuak
-    // --------------------------------------------------
-
+    // PRODUKTUAK KARGATZEA
     DisposableEffect(db, categoriaSeleccionada, categorias) {
         var consulta: Query = db.collection("produktuak")
 
