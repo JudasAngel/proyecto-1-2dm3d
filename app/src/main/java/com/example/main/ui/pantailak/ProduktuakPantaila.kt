@@ -1,5 +1,6 @@
 package com.example.main.ui.pantailak
 
+import android.app.Activity
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -27,6 +28,7 @@ import com.google.firebase.firestore.Query
 import java.util.Locale
 import com.example.main.ui.data.Produktua
 import com.example.main.ui.data.produktuZerrenda
+import java.util.concurrent.Executors
 
 // Firestore-ko kategoria baten informazioa gordetzen du.
 data class Categoria(
@@ -38,6 +40,10 @@ data class Categoria(
 @Composable
 fun ProduktuakPantaila(
 ) {
+
+    val context = LocalContext.current
+    val activity = context as? Activity
+    val haria = remember { Executors.newSingleThreadExecutor() }
 
     // Kategoria-menua irekita dagoen ala ez kontrolatzen du.
     var menuAbierto by remember {
@@ -90,7 +96,7 @@ fun ProduktuakPantaila(
     DisposableEffect(db) {
 
         val listener = db.collection("product_type")
-            .addSnapshotListener { snapshot, error ->
+            .addSnapshotListener(haria) { snapshot, error ->
 
                 if (error != null) {
                     errorTipos = true
@@ -104,8 +110,7 @@ fun ProduktuakPantaila(
 
                 } else if (snapshot != null) {
 
-                    // Dokumentuak Categoria objektu bihurtzen ditu.
-                    categorias = snapshot.documents
+                    val lista = snapshot.documents
                         .mapNotNull { doc ->
 
                             val nombre = doc.getString("izena")
@@ -123,9 +128,11 @@ fun ProduktuakPantaila(
                         .sortedBy {
                             it.id.toIntOrNull() ?: Int.MAX_VALUE
                         }
-
-                    cargandoTipos = false
-                    errorTipos = false
+                    activity?.runOnUiThread {
+                        categorias = lista
+                        cargandoTipos = false
+                        errorTipos = false
+                    }
                 }
             }
 
@@ -159,7 +166,7 @@ fun ProduktuakPantaila(
         cargandoProductos = true
         errorProductos = false
 
-        val listener = consulta.addSnapshotListener { snapshot, error ->
+        val listener = consulta.addSnapshotListener(haria) { snapshot, error ->
 
             if (error != null) {
 
@@ -173,8 +180,8 @@ fun ProduktuakPantaila(
                 )
 
             } else if (snapshot != null) {
-
-                productos = snapshot.documents.mapNotNull { doc ->
+                val lista = snapshot.documents
+                    .mapNotNull { doc ->
 
                     val id = doc.id
 
@@ -206,10 +213,12 @@ fun ProduktuakPantaila(
                         prezioa = precio,
                         argazkia = doc.getString("argazkia")                    )
                 }
+                activity?.runOnUiThread {
+                    productos = lista
+                    cargandoProductos = false
+                    errorProductos = false
 
-                cargandoProductos = false
-                errorProductos = false
-
+                }
                 android.util.Log.d(
                     "DEBUG_FIREBASE",
                     "Kargatutako produktuak: ${productos.size}"
