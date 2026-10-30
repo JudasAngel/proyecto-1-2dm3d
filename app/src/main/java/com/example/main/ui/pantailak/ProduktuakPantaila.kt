@@ -99,8 +99,10 @@ fun ProduktuakPantaila(
             .addSnapshotListener(haria) { snapshot, error ->
 
                 if (error != null) {
-                    errorTipos = true
-                    cargandoTipos = false
+                    activity?.runOnUiThread{
+                        errorTipos = true
+                        cargandoTipos = false
+                    }
 
                     android.util.Log.e(
                         "DEBUG_FIREBASE",
@@ -169,9 +171,10 @@ fun ProduktuakPantaila(
         val listener = consulta.addSnapshotListener(haria) { snapshot, error ->
 
             if (error != null) {
-
-                errorProductos = true
-                cargandoProductos = false
+                activity?.runOnUiThread {
+                    errorProductos = true
+                    cargandoProductos = false
+                }
 
                 android.util.Log.e(
                     "DEBUG_FIREBASE",
@@ -188,9 +191,11 @@ fun ProduktuakPantaila(
                     val nombre = doc.getString("izena")
                         ?: return@mapNotNull null
 
-                    val precio = doc.getDouble("prezioa")
-                        ?: doc.getLong("prezioa")?.toDouble()
-                        ?: 0.0
+                    val precio = when (val p = doc.get("prezioa")) {
+                        is Number -> p.toDouble()
+                        is String -> p.replace(",", ".").toDoubleOrNull() ?: 0.0
+                        else -> 0.0
+                    }
 
                     val motaId = doc.getLong("mota")?.toString()
                         ?: doc.getString("mota")
