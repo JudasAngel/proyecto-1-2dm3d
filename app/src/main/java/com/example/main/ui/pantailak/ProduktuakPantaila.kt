@@ -29,6 +29,9 @@ import com.google.firebase.firestore.Query
 import java.util.Locale
 import com.example.main.ui.data.Produktua
 import com.example.main.ui.data.produktuZerrenda
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.withContext
 import java.util.concurrent.Executors
 
 
