@@ -40,12 +40,9 @@ import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FirebaseFirestore
 
 @Composable
-fun ErregistroPantaila(
-    modifier: Modifier = Modifier,
-    onBack: () -> Unit = {}
-) {
-    val context = LocalContext.current
+fun ErregistroPantaila(modifier: Modifier = Modifier, onBack: () -> Unit = {}) {
 
+    val context = LocalContext.current
     var id by remember { mutableStateOf("") }
     var nombre by remember { mutableStateOf("") }
     var apellido by remember { mutableStateOf("") }
@@ -58,11 +55,12 @@ fun ErregistroPantaila(
             .fillMaxWidth()
             .fillMaxSize()
             .verticalScroll(rememberScrollState()),
+
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceEvenly
     ) {
 
-        // LOGOA
+        // ENPRESAREN LOGOA
         Image(
             painter = painterResource(id = R.drawable.arrese),
             contentDescription = "Logo de Arrese",
@@ -76,6 +74,7 @@ fun ErregistroPantaila(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp),
+
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
@@ -96,8 +95,10 @@ fun ErregistroPantaila(
                     onValueChange = { nombre = it },
                     modifier = Modifier.width(250.dp),
                     placeholder = {
-                        Text("Escribe tu nombre")
+                        Text("Idatzi zure izena")
                     },
+
+                    // Erabilitako eta erabili gabeko ertzaren kolorea.
                     colors = OutlinedTextFieldDefaults.colors(
                         unfocusedBorderColor = Color(0xFFD32F2F),
                         focusedBorderColor = Color(0xFFD32F2F)
@@ -105,7 +106,7 @@ fun ErregistroPantaila(
                 )
             }
 
-            // ABIZENA
+            // ABIZENA IDAZTEKO EREMUA
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -117,13 +118,19 @@ fun ErregistroPantaila(
                     modifier = Modifier.weight(1f)
                 )
 
+                // ABIZENA
                 OutlinedTextField(
                     value = apellido,
+
+                    // Abizenaren balioa eguneratzen du.
                     onValueChange = { apellido = it },
+
                     modifier = Modifier.width(250.dp),
+
                     placeholder = {
-                        Text("Escribe tu apellido")
+                        Text("Idatzi zure abizena")
                     },
+
                     colors = OutlinedTextFieldDefaults.colors(
                         unfocusedBorderColor = Color(0xFFD32F2F),
                         focusedBorderColor = Color(0xFFD32F2F)
@@ -131,7 +138,7 @@ fun ErregistroPantaila(
                 )
             }
 
-            // NAN
+            // NAN-A
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -147,9 +154,11 @@ fun ErregistroPantaila(
                     value = nan,
                     onValueChange = { nan = it },
                     modifier = Modifier.width(250.dp),
+
                     placeholder = {
                         Text("Idatzi zure NANa")
                     },
+
                     colors = OutlinedTextFieldDefaults.colors(
                         unfocusedBorderColor = Color(0xFFD32F2F),
                         focusedBorderColor = Color(0xFFD32F2F)
@@ -173,9 +182,11 @@ fun ErregistroPantaila(
                     value = gmail,
                     onValueChange = { gmail = it },
                     modifier = Modifier.width(250.dp),
+
                     placeholder = {
-                        Text("Escribe tu Gmail")
+                        Text("Idatzi zure Gmail")
                     },
+
                     colors = OutlinedTextFieldDefaults.colors(
                         unfocusedBorderColor = Color(0xFFD32F2F),
                         focusedBorderColor = Color(0xFFD32F2F)
@@ -199,11 +210,14 @@ fun ErregistroPantaila(
                     value = password,
                     onValueChange = { password = it },
                     modifier = Modifier.width(250.dp),
+
                     placeholder = {
-                        Text("Escribe tu contraseña")
+                        Text("Idatzi zure pasahitza")
                     },
-                    visualTransformation =
-                        PasswordVisualTransformation(),
+
+                    // Pasahitza ezkutatzeko
+                    visualTransformation = PasswordVisualTransformation(),
+
                     colors = OutlinedTextFieldDefaults.colors(
                         unfocusedBorderColor = Color(0xFFD32F2F),
                         focusedBorderColor = Color(0xFFD32F2F)
@@ -211,24 +225,25 @@ fun ErregistroPantaila(
                 )
             }
         }
-
-        // BOTOIAK
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 16.dp),
+
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
 
-            // ITZULI: regresar al login
             Button(
                 onClick = {
                     onBack()
                 },
+
                 modifier = Modifier
                     .width(150.dp)
                     .height(50.dp),
+
                 shape = RoundedCornerShape(8.dp),
+
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFFD32F2F)
                 )
@@ -236,78 +251,65 @@ fun ErregistroPantaila(
                 Text(text = "ITZULI")
             }
 
-            // SORTU: crear cuenta
+            // SORTU BOTOIA
             Button(
                 onClick = {
 
-                    // Comprobar campos vacíos
-                    if (
-                        nombre.isBlank() ||
-                        apellido.isBlank() ||
-                        gmail.isBlank() ||
-                        password.isBlank() ||
-                        nan.isBlank()
-                    ) {
-                        Toast.makeText(
-                            context,
-                            "Eremu guztiak beteta izan behar dira",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                    // Eremuren bat hutsik badago, errore-mezua erakusten da
+                    if (nombre.isBlank() || apellido.isBlank() || gmail.isBlank() || password.isBlank() || nan.isBlank()) {
+                        Toast.makeText(context, "Eremu guztiak beteta izan behar dira", Toast.LENGTH_SHORT).show()
+
                         return@Button
                     }
 
-                    // Validar NAN
+                    // NAN-AREN FORMATUA EGIAZTATU
                     val nanRegex = Regex("^[0-9]{8}[A-Za-z]$")
 
                     if (!nanRegex.matches(nan.trim())) {
-                        Toast.makeText(
-                            context,
-                            "NANak 8 zenbaki eta letra 1 izan behar ditu (adib. 12345678A)",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        Toast.makeText(context, "NANak 8 zenbaki eta letra 1 izan behar ditu (adib. 12345678A)", Toast.LENGTH_SHORT).show()
+
+                        // NANaren formatua okerra bada, prozesua gelditzen da
                         return@Button
                     }
 
-                    // Validar email
-                    if (
-                        !android.util.Patterns.EMAIL_ADDRESS
+                    //EMAILAREN FORMATUA EGIAZTATU
+
+                    // Emailak helbide elektroniko baten oinarrizko formatua
+                    if (!android.util.Patterns.EMAIL_ADDRESS
                             .matcher(gmail.trim())
                             .matches()
                     ) {
-                        Toast.makeText(
-                            context,
-                            "E-maila formatu egokian izan behar da",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        Toast.makeText(context, "E-maila formatu egokian izan behar da", Toast.LENGTH_SHORT).show()
+
+                        // Emailaren formatua okerra bada, gelditu egiten da
                         return@Button
                     }
 
-                    // Validar contraseña
+                   // PASAHITZAREN LUZERA EGIAZTATU
                     if (password.length < 6) {
-                        Toast.makeText(
-                            context,
-                            "Pasahitzak gutxienez 6 karaktere izan behar ditu",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        Toast.makeText(context, "Pasahitzak gutxienez 6 karaktere izan behar ditu", Toast.LENGTH_SHORT).show()
+
+                        // Baldintza betetzen ez bada ez du kontua sortzen
                         return@Button
                     }
 
+                    // FIREBASE ZERBITZUAK LORTU.
                     val auth = Firebase.auth
+
+                    // datu-basean erabiltzailearen datuak gordetzeko.
                     val db = FirebaseFirestore.getInstance()
 
-                    // Crear usuario en Firebase Authentication
+                    // FIREBASE AUTHENTICATION-EAN KONTUA SORTU.
+
+                    // Emaila eta pasahitza erabiliz kontu berria sortzen saiatu
                     auth.createUserWithEmailAndPassword(
                         gmail.trim(),
                         password
                     ).addOnCompleteListener { task ->
-
                         if (task.isSuccessful) {
+                            Log.d("Firebase", "createUserWithEmail:success")
 
-                            Log.d(
-                                "Firebase",
-                                "createUserWithEmail:success"
-                            )
-
+                            // Firebase Authentication-en sortutako erabiltzailearen UIDa lortzen du
                             id = auth.currentUser?.uid ?: ""
 
                             val userData = hashMapOf(
@@ -315,65 +317,60 @@ fun ErregistroPantaila(
                                 "izena" to nombre.trim(),
                                 "abizena" to apellido.trim(),
                                 "email" to gmail.trim(),
+
+                                // NANa maiuskulaz gordetzen du
                                 "NAN" to nan.trim().uppercase(),
+
+                                // Erabiltzaile motaren identifikatzailea gordetzen du
                                 "id-type" to 1
                             )
 
-                            // Guardar datos en Firestore
+                            // DATUAK FIRESTORE-N GORDE
+
+                            // "erabiltzaileak" bilduman gordetzen ditu datuak
                             db.collection("erabiltzaileak")
                                 .document(id)
                                 .set(userData)
+                                // Datuak behar bezala gordetzen badira exekutatzen da
                                 .addOnSuccessListener {
+                                    // Logcat-en datuak gorde direla adierazten du
+                                    Log.d("Firestore", "Erabiltzailea ongi gordeta ID honekin: $id")
 
-                                    Log.d(
-                                        "Firestore",
-                                        "Erabiltzailea ongi gordeta ID honekin: $id"
-                                    )
+                                    // Erregistroa amaitu dela jakinarazten dio erabiltzaileari
+                                    Toast.makeText(context, "Erregistroa arrakastatsua eta gordeta!", Toast.LENGTH_SHORT).show()
 
-                                    Toast.makeText(
-                                        context,
-                                        "Erregistroa arrakastatsua eta gordeta!",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-
-                                    // Regresar al login sin cerrar la actividad
                                     onBack()
                                 }
+
+                                // Firestore-n datuak gordetzean errorea gertatzen bada
                                 .addOnFailureListener { e ->
+                                    Log.e("Firestore", "Errorea datuak gordetzen", e)
 
-                                    Log.e(
-                                        "Firestore",
-                                        "Errorea datuak gordetzen",
-                                        e
-                                    )
-
-                                    Toast.makeText(
-                                        context,
-                                        "Errorea Firestore-n: ${e.message}",
-                                        Toast.LENGTH_LONG
-                                    ).show()
+                                    // Errorearen mezua erabiltzaileari erakusten dio
+                                    Toast.makeText(context, "Errorea Firestore-n: ${e.message}", Toast.LENGTH_LONG).show()
                                 }
 
                         } else {
 
+                            // Firebase Authentication-ek kontua sortu ezin badu
                             Log.w(
                                 "Firebase",
                                 "createUserWithEmail:failure",
                                 task.exception
                             )
 
-                            Toast.makeText(
-                                context,
-                                "Errorea erregistroan: ${task.exception?.message}",
-                                Toast.LENGTH_LONG
-                            ).show()
+                            // Kontua sortzean gertatutako errorearen mezua erakusten du
+                            Toast.makeText(context, "Errorea erregistroan: ${task.exception?.message}", Toast.LENGTH_LONG).show()
                         }
                     }
                 },
+
                 modifier = Modifier
                     .width(150.dp)
                     .height(50.dp),
+
                 shape = RoundedCornerShape(8.dp),
+
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFFD32F2F)
                 )

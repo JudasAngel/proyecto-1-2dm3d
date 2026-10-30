@@ -9,15 +9,18 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.main.ui.pantailak.BottomNavBar
 import com.example.main.ui.pantailak.CRUDPantaila
 import com.example.main.ui.pantailak.ProduktuakPantaila
 import com.example.login.ui.pantailak.SaioHasieraPantaila
 import com.example.main.ui.pantailak.ErregistroPantaila
+import com.example.main.ui.pantailak.ProduktuakEguneratu
 import com.example.main.ui.pantailak.ProduktuakGehitu
 import com.example.main.ui.pantailak.SaskiPantaila
 import com.google.firebase.auth.FirebaseAuth
@@ -107,21 +110,39 @@ fun NireAplikazioa() {
             composable("crud") {
                 CRUDPantaila(
                     onAdd = {
-                        navController.navigate("add")
+                        // Navega a la pantalla sin pasar ningún ID (modo añadir)
+                        navController.navigate("eguneratu")
                     },
                     onEdit = { docId ->
-                        navController.navigate("edit/$docId")
+                        // Navega a la pantalla pasando el ID del producto (modo editar)
+                        navController.navigate("eguneratu/$docId")
                     }
                 )
             }
 
-            composable("add") {
-                ProduktuakGehitu()
+            // Ruta para AÑADIR un nuevo producto
+            composable("eguneratu") {
+                ProduktuakEguneratu(
+                    productId = null,
+                    onAtzeraEgin = { navController.popBackStack() }
+                )
             }
 
-            composable("edit") {
-                ProduktuakGehitu()
+            composable(
+                route = "eguneratu/{productId}",
+                arguments = listOf(navArgument("productId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val productId = backStackEntry.arguments?.getString("productId")
+
+                ProduktuakEguneratu(
+                    productId = productId,
+                    onAtzeraEgin = { navController.popBackStack() }
+                )
             }
+
+
+
+
         }
     }
 }

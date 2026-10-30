@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.apparrese.R
+import com.example.main.ui.data.Kategoria
 import com.example.main.ui.theme.ArreseGorria
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -30,53 +31,42 @@ import com.example.main.ui.data.Produktua
 import com.example.main.ui.data.produktuZerrenda
 import java.util.concurrent.Executors
 
-// Firestore-ko kategoria baten informazioa gordetzen du.
-data class Categoria(
-    val id: String,
-    val izena: String
-)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProduktuakPantaila(
-) {
+fun ProduktuakPantaila() {
 
     val context = LocalContext.current
     val activity = context as? Activity
     val haria = remember { Executors.newSingleThreadExecutor() }
 
     // Kategoria-menua irekita dagoen ala ez kontrolatzen du.
-    var menuAbierto by remember {
-        mutableStateOf(false)
-    }
+    var menuAbierto by remember { mutableStateOf(false) }
 
     // Firestore-tik lortutako kategoriak gordetzen ditu.
-    var categorias by remember {
-        mutableStateOf<List<Categoria>>(emptyList())
-    }
+    var categorias by remember { mutableStateOf<List<Kategoria>>(emptyList()) }
 
     // null bada, produktu guztiak erakusten dira.
-    var categoriaSeleccionada by remember {
-        mutableStateOf<Categoria?>(null)
-    }
+    var categoriaSeleccionada by remember { mutableStateOf<Kategoria?>(null) }
 
     // Kategorien karga- eta errore-egoerak.
-    var cargandoTipos by remember {
-        mutableStateOf(true)
-    }
+    var cargandoTipos by remember { mutableStateOf(true) }
 
-    var errorTipos by remember {
-        mutableStateOf(false)
-    }
+    var errorTipos by remember { mutableStateOf(false) }
 
     // Produktuen zerrenda eta haien karga-egoerak.
-    var productos by remember {
-        mutableStateOf<List< Produktua>>(emptyList())
-    }
+    var productos by remember { mutableStateOf<List<Produktua>>(emptyList()) }
 
-    var cargandoProductos by remember {
-        mutableStateOf(true)
-    }
+    // Produktuen zerrenda
+    var produktuak by remember { mutableStateOf<List<Produktua>>(emptyList()) }
+
+    // Bilatzailean idatzitako testua
+    var bilaketaTestua by remember { mutableStateOf("") }
+
+    // Bilaketaren emaitzak
+    var iragazitakoProduktuak by remember { mutableStateOf<List<Produktua>>(emptyList()) }
+
+    var cargandoProductos by remember { mutableStateOf(true) }
 
     var errorProductos by remember {
         mutableStateOf(false)
@@ -87,11 +77,32 @@ fun ProduktuakPantaila(
         FirebaseFirestore.getInstance()
     }
 
-    // --------------------------------------------------
-    // 1. KATEGORIAK KARGATZEA
-    // Kolekzioa: product_type
-    // Erabilitako eremua: izena
-    // --------------------------------------------------
+    // Bilaketa haria kudeatzen du
+    LaunchedEffect(bilaketaTestua, productos) {
+
+        // Bilaketa bigarren harian egiten du.
+        val emaitzak = withContext(Dispatchers.Default) {
+
+            // Bilaketa-testua letra xehez bihurtzen du
+            val bilatutakoTestua = bilaketaTestua.lowercase(Locale.ROOT)
+
+            // Produktuak iragazten ditu
+            productos.filter { producto ->
+
+                // Bilaketa bertan behera geratu den egiaztatzen du
+                coroutineContext.ensureActive()
+
+                // Produktuaren izenean testua bilatzen du
+                producto.izena.lowercase(Locale.ROOT)
+                    .contains(bilatutakoTestua)
+            }
+        }
+
+        // Emaitzak pantailaren egoeran gordetzen ditu.
+        iragazitakoProduktuak = emaitzak
+    }
+
+    // KATEGORIAK KARGATZEA
 
     DisposableEffect(db) {
 
@@ -118,7 +129,7 @@ fun ProduktuakPantaila(
                             val nombre = doc.getString("izena")
 
                             if (nombre != null) {
-                                Categoria(
+                                Kategoria(
                                     id = doc.id,
                                     izena = nombre
                                 )
@@ -144,11 +155,7 @@ fun ProduktuakPantaila(
         }
     }
 
-    // --------------------------------------------------
-    // 2. PRODUKTUAK KARGATZEA
-    // Kolekzioa: produktuak
-    // --------------------------------------------------
-
+    // PRODUKTUAK KARGATZEA
     DisposableEffect(db, categoriaSeleccionada, categorias) {
         var consulta: Query = db.collection("produktuak")
 
@@ -197,8 +204,9 @@ fun ProduktuakPantaila(
                         else -> 0.0
                     }
 
-                    val motaId = doc.getLong("mota")?.toString()
-                        ?: doc.getString("mota")
+                    val rawMota = doc.get("mota")
+                    val motaId = (rawMota as? Number)?.toString()
+                        ?: (rawMota as? String)
 
                     val nombreCategoria = categorias.find {
                         it.id == motaId
@@ -208,7 +216,9 @@ fun ProduktuakPantaila(
                         ?: nombreCategoria
                         ?: "Kategoriarik gabe"
 
-                    val motaNumero = motaId?.toIntOrNull() ?: 0
+                    val motaNumero = (rawMota as? Number)?.toInt()
+                        ?: (rawMota as? String)?.toIntOrNull()
+                        ?: 0
 
                     Produktua(
                         id = id,
@@ -216,7 +226,8 @@ fun ProduktuakPantaila(
                         izena = nombre,
                         deskribapena = doc.getString("deskribapena") ?: "",
                         prezioa = precio,
-                        argazkia = doc.getString("argazkia")                    )
+                        argazkia = doc.getString("argazkia")
+                    )
                 }
                 activity?.runOnUiThread {
                     productos = lista
@@ -236,15 +247,7 @@ fun ProduktuakPantaila(
         }
     }
 
-    // --------------------------------------------------
-    // 3. PANTAILAREN DISEINUA
-    // --------------------------------------------------
-
-
-
-
-
-
+    // PANTAILAREN DISEINUA
     Scaffold(
         topBar = {
             TopAppBar(
@@ -362,7 +365,7 @@ fun ProduktuakPantaila(
             )
         },
 
-    ) { paddingValues ->
+        ) { paddingValues ->
 
         LazyColumn(
             modifier = Modifier
@@ -407,6 +410,20 @@ fun ProduktuakPantaila(
                     HorizontalDivider(
                         color = ArreseGorria.copy(alpha = 0.35f),
                         thickness = 1.dp
+                    )
+
+                    // Produktuak bilatzeko testu-eremua
+                    OutlinedTextField(
+                        value = bilaketaTestua,
+                        onValueChange = { testua ->
+                            bilaketaTestua = testua
+                        },
+                        label = { Text("Produktuak bilatu") },
+                        placeholder = { Text("Idatzi produktuaren izena...") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp),
+                        singleLine = true
                     )
                 }
             }
@@ -457,7 +474,7 @@ fun ProduktuakPantaila(
                 }
             } else {
                 items(
-                    items = productos,
+                    items = iragazitakoProduktuak,
                     key = { it.id }
                 ) { producto ->
 
@@ -551,7 +568,7 @@ fun ProductuItem(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
-                ){
+                ) {
                     Text(
                         text = String.format(
                             Locale("es", "ES"),
@@ -570,12 +587,31 @@ fun ProductuItem(
                             .fillMaxWidth()
                             .clickable {
                                 produktuZerrenda.add(producto.id)
-                                Toast.makeText(context, "${producto.izena} karritora gehitu da", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(
+                                    context,
+                                    "${producto.izena} karritora gehitu da",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             },
                         textAlign = TextAlign.End
                     )
                 }
             }
         }
+    }
+}
+
+// Produktuak bilatzeko funtzioa
+fun bilatuProduktuak(
+    produktua: List<Produktua>,
+    texto: String
+): List<Produktua> {
+
+    // Testua letra xehez bihurtzen du
+    val bilatutakoTestua = texto.lowercase(Locale.ROOT)
+
+    // Testua produktuaren izenean bilatzen du
+    return produktua.filter { produktua ->
+        produktua.izena.lowercase(Locale.ROOT).contains(bilatutakoTestua)
     }
 }
