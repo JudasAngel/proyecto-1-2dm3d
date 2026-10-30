@@ -155,6 +155,7 @@ fun ProduktuakPantaila() {
         // Pantailatik irtetean entzulea kentzen du.
         onDispose {
             listener.remove()
+            haria.shutdown()
         }
     }
 
@@ -247,6 +248,7 @@ fun ProduktuakPantaila() {
 
         onDispose {
             listener.remove()
+            haria.shutdown()
         }
     }
 
