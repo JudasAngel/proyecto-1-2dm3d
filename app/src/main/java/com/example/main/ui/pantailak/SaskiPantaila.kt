@@ -28,8 +28,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Scaffold
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.rememberNavController
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -51,7 +49,7 @@ import com.example.main.ui.data.produktuZerrenda
 import com.example.main.ui.theme.ArreseGorria
 import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FirebaseFirestore
-
+//Esta clase define qué información tiene cada producto del carrito
 data class SaskiItem(
     val id: String,
     val izena: String,
@@ -64,26 +62,33 @@ fun SaskiPantaila(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-
+//lsiat de la saskia valors de karga y de error
     var saskiItems by remember { mutableStateOf<List<SaskiItem>>(emptyList()) }
     var kargatzen by remember { mutableStateOf(false) }
     var errorea by remember { mutableStateOf<String?>(null) }
-
+//cargamos al incial la pantalla y le apsamo la lista de productos
     LaunchedEffect(produktuZerrenda.toList()) {
+        //is la lista no etsa vacia
         if (produktuZerrenda.isNotEmpty()) {
+            //ponemso que craga y eror sige como null
             kargatzen = true
             errorea = null
+            //contamos la cantida por porducto
             val idCounts = produktuZerrenda.groupingBy { it }.eachCount()
+            //lisat de indicadores unicos
             val uniqueIds = idCounts.keys.toList()
 
             val db = FirebaseFirestore.getInstance()
             db.collection("produktuak")
+                //los porductos que el id conicida co los de uniqueids
                 .whereIn(FieldPath.documentId(), uniqueIds)
                 .get()
                 .addOnSuccessListener { querySnapshot ->
+                    //metenmos los datos en la lista y trnasfomamos lodatos en obejto ysado la clase produktuak
                     val list = querySnapshot.documents.mapNotNull { doc ->
                         val p = doc.toObject(Produktua::class.java)
                         if (p != null) {
+                            //crea un objeto con los datos de la query
                             SaskiItem(
                                 id = doc.id,
                                 izena = p.izena,
@@ -92,6 +97,7 @@ fun SaskiPantaila(
                             )
                         } else null
                     }
+                    //ahora ponemos en sakiitems los datos de la lisat
                     saskiItems = list
                     kargatzen = false
                 }
@@ -104,9 +110,11 @@ fun SaskiPantaila(
             kargatzen = false
         }
     }
-
+//uan multiplicaion de los precion de sakiitems miltiplican precio por katidad esto es apr cada porductos
     val subtotal = saskiItems.sumOf { it.prezioa * it.kantitatea }
+    //percio de envio
     val bidalketa = if (saskiItems.isNotEmpty()) 2.50 else 0.0
+    //el tola del a bidelketa ms el subtotla
     val totala = subtotal + bidalketa
 
     Scaffold(
@@ -161,9 +169,11 @@ fun SaskiPantaila(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                //le decimos que use id como identificador unico
                 items(saskiItems, key = { it.id }) { item ->
                     SaskiCard(
                         item = item,
+                        //cuando decimos de aññadri rvisa el id usama el de ese msimo
                         onAdd = {
                             produktuZerrenda.add(item.id)
                             saskiItems = saskiItems.map {

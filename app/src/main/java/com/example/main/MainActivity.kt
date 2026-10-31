@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.example.arresees.ui.theme.ArreseesTheme
+import com.example.main.MusikaKudeatzailea
 
 
 class MainActivity : ComponentActivity() {
@@ -19,5 +20,10 @@ class MainActivity : ComponentActivity() {
                 NireAplikazioa()
             }
         }
+    }
+    //para que sis e sale de la palicaion la usca no se escuche en sgeundo palnao
+    override fun onDestroy() {
+        if (isFinishing) MusikaKudeatzailea.gelditu()
+        super.onDestroy()
     }
 }

@@ -35,7 +35,6 @@ import androidx.compose.ui.unit.dp
 import com.example.apparrese.R
 import com.example.main.ui.theme.ArreseGorria
 import com.example.main.ui.pantailak.ErregistroPantaila
-import com.example.main.ui.pantailak.ProduktuakPantaila
 import com.google.firebase.FirebaseNetworkException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
