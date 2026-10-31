@@ -39,23 +39,30 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.firestore.FirebaseFirestore
-
+//esta fucnion recive on add o onedit que es para crear y para editar
 @Composable
 fun CRUDPantaila(
     onAdd: () -> Unit = {},
     onEdit: (String) -> Unit = {}
 ) {
+    //lisat donde se guradan los porsuctos
     var productList by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
+    //es una fucnion oque da informacion sirve apra poder usar toast
     val context = LocalContext.current
+    //si conexto es un activity lo almacenamos sino ponemos null
     val activity = context as? Activity
 
     // Thread que carga los productos
     val kargatuDatuak = {
+        //si la caivity no es igual a null enonces hempecamso el hilo apra cargar los datos
         if (activity != null) {
             Thread {
                 val db = FirebaseFirestore.getInstance()
                 db.collection("produktuak").get()
                     .addOnSuccessListener { result ->
+                        //obitne los docuemnto o lo hencontrado en reuslt almacena los datos de produktuak
+                        //doc tine cada bloqeu eentondes dentro de data mete los datso de cada doc y luego
+                        //ha etse mismo le da la optrtunida de metrele un id uqe es el mismo que el de doc.
                         val list = result.documents.mapNotNull { doc ->
                             val data = doc.data
                             data?.toMutableMap()?.apply { put("id", doc.id) }
@@ -69,13 +76,14 @@ fun CRUDPantaila(
             }.start()
         }
     }
-
+//al inciar la apntalla llamamo al al fucnion de carga de datos
     LaunchedEffect(Unit) {
         kargatuDatuak()
     }
 
     Scaffold(
         floatingActionButton = {
+            //camamos a la funcion de crear
             FloatingActionButton(onClick = onAdd) {
                 Icon(
                     imageVector = Icons.Default.Add,
@@ -91,28 +99,32 @@ fun CRUDPantaila(
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
+            //compueba si la lista esta vacia muetar el mensaje de kargatzen sino
             if (productList.isEmpty()) {
                 Text(
                     text = "Produktuak Kargatzen...",
                     modifier = Modifier.padding(top = 16.dp),
                     color = Color.Gray
                 )
+                //carga los productos de la lista con un forech y usa basriavels para meter los datos en estas
             } else {
                 productList.forEach { product ->
                     val docId = product["id"] as? String ?: ""
                     var izena = product["izena"] as? String ?: "Izenik gabe"
                     val prezioa = (product["prezioa"] as? Number)?.toDouble() ?: 0.0
                     val stock = (product["stock"] as? Number)?.toInt() ?: 0
-
+                    //si ziena esta vacio pone izenabarik
                     if(izena.trim() == "") {
                         izena = "Izenik gabe"
                     }
-
+                    //lammamos a una fucnion en la que le pasamos parametro y loq ue deve pasarl al ulsar los diferentes bootnes
                     ProductRow(
                         name = izena,
                         price = prezioa,
                         stock = stock,
+                        //malamos la fucnion eidt y le apsom id
                         onEdit = { onEdit(docId) },
+                        //si no hay id o ativyty borramos el elmento
                         onDelete = {
                             if (docId.isNotEmpty() && activity != null) {
                                 // Thread para borrar
@@ -136,7 +148,7 @@ fun CRUDPantaila(
         }
     }
 }
-
+//la funcion para cargar lso porducos y en etsa se cargan los datos y pasmos los paramtros necesariso
 @Composable
 fun ProductRow(
     name: String,
