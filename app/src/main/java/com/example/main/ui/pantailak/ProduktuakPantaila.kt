@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.apparrese.R
+import com.example.main.IrudiKargatua
 import com.example.main.ui.theme.ArreseGorria
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -487,31 +488,11 @@ fun ProductuItem(
             modifier = Modifier.fillMaxWidth()
         ) {
 
-            val context = LocalContext.current
-            val imageResId = producto.argazkia?.let {
-                context.resources.getIdentifier(
-                    it.lowercase(Locale.ROOT),
-                    "drawable",
-                    context.packageName
-                )
-            } ?: 0
+            val context = LocalContext.current      // lo usa el Toast de abajo
 
-            android.util.Log.d(
-                "IMG",
-                "Producto: ${producto.izena}, " +
-                        "Imagen: ${producto.argazkia}, ID: $imageResId"
-            )
-
-            Image(
-                painter = painterResource(
-                    id = if (imageResId != 0) {
-                        imageResId
-                    } else {
-                        R.drawable.predeterminada
-                    }
-                ),
-                contentDescription = producto.izena,
-                contentScale = ContentScale.Crop,
+            IrudiKargatua(
+                argazkia = producto.argazkia,
+                izena = producto.izena,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(190.dp)
