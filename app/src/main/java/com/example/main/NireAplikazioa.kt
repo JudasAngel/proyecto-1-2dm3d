@@ -7,6 +7,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.Lifecycle
@@ -28,16 +31,51 @@ import com.example.main.ui.pantailak.ProduktuakEguneratu
 import com.example.main.ui.pantailak.SaskiPantaila
 import com.google.firebase.auth.FirebaseAuth
 import com.example.login.ui.pantailak.DetalleProductoScreen
+import com.google.firebase.firestore.FirebaseFirestore
 
 @Composable
 fun NireAplikazioa() {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
+    var userType by remember { mutableStateOf<Long?>(null) }
 
-
-    LaunchedEffect(Unit) {
-        Log.d("NAVEGACION", "NireAplikazioa se está ejecutando")
+    // Listen to Firebase Auth state changes so userType is fetched immediately upon login
+    DisposableEffect(Unit) {
+        val auth = FirebaseAuth.getInstance()
+        val listener = FirebaseAuth.AuthStateListener { firebaseAuth ->
+            val user = firebaseAuth.currentUser
+            if (user != null) {
+                FirebaseFirestore.getInstance()
+                    .collection("erabiltzaileak")
+                    .document(user.uid)
+                    .get()
+                    .addOnSuccessListener { document ->
+                        if (document.exists()) {
+                            val rawType = document.get("id-type") ?: document.get("tipo") ?: document.get("idType")
+                            userType = when (rawType) {
+                                is Number -> rawType.toLong()
+                                is String -> rawType.toLongOrNull()
+                                else -> 1L
+                            }
+                            Log.d("USER_TYPE", "User type loaded: $userType (uid: ${user.uid})")
+                        } else {
+                            Log.w("USER_TYPE", "Document for uid ${user.uid} does not exist in erabiltzaileak")
+                            userType = 1L
+                        }
+                    }
+                    .addOnFailureListener { e ->
+                        Log.e("USER_TYPE", "Error fetching user document", e)
+                        userType = 1L
+                    }
+            } else {
+                userType = null
+            }
+        }
+        auth.addAuthStateListener(listener)
+        onDispose {
+            auth.removeAuthStateListener(listener)
+        }
     }
     val navController = rememberNavController()
 
@@ -75,15 +113,16 @@ fun NireAplikazioa() {
                 rutaActual == "carrito" ||
                 rutaActual == "crud"
             ) {
+
                 BottomNavBar(
                     navController = navController,
+                    userType = userType,
                     onSalir = {
+                        userType = null
                         MusikaKudeatzailea.gelditu()
                         FirebaseAuth.getInstance().signOut()
                         navController.navigate("login") {
-                            popUpTo("login") {
-                                inclusive = true
-                            }
+                            popUpTo("login") { inclusive = true }
                             launchSingleTop = true
                         }
                     }
@@ -171,16 +210,24 @@ fun NireAplikazioa() {
             }
 
             composable("crud") {
-                CRUDPantaila(
-                    onAdd = {
-                        // Navega a la pantalla sin pasar ningún ID (modo añadir)
-                        navController.navigate("eguneratu")
-                    },
-                    onEdit = { docId ->
-                        // Navega a la pantalla pasando el ID del producto (modo editar)
-                        navController.navigate("eguneratu/$docId")
+                if (userType == 2L) {
+                    CRUDPantaila(
+                        onAdd = {
+                            // Navega a la pantalla sin pasar ningún ID (modo añadir)
+                            navController.navigate("eguneratu")
+                        },
+                        onEdit = { docId ->
+                            // Navega a la pantalla pasando el ID del producto (modo editar)
+                            navController.navigate("eguneratu/$docId")
+                        }
+                    )
+                } else {
+                    LaunchedEffect(Unit) {
+                        navController.navigate("home") {
+                            popUpTo("home") {inclusive = true}
+                        }
                     }
-                )
+                }
             }
 
             // Ruta para AÑADIR un nuevo producto
