@@ -27,6 +27,7 @@ import com.example.main.ui.pantailak.ErregistroPantaila
 import com.example.main.ui.pantailak.ProduktuakEguneratu
 import com.example.main.ui.pantailak.SaskiPantaila
 import com.google.firebase.auth.FirebaseAuth
+import com.example.login.ui.pantailak.DetalleProductoScreen
 
 @Composable
 fun NireAplikazioa() {
@@ -50,7 +51,8 @@ fun NireAplikazioa() {
     val rutasConBarra = setOf(
         "home",
         "carrito",
-        "crud"
+        "crud",
+        "producto/{id}"
     )
     // 2. Observador de ciclo de vida (pausa y reanuda)
     DisposableEffect(lifecycleOwner) {
@@ -122,7 +124,46 @@ fun NireAplikazioa() {
             }
 
             composable("home") {
-                ProduktuakPantaila()
+                ProduktuakPantaila(
+
+                    onProduktuaClick = { id ->
+
+                        Log.d(
+                            "NAVEGACION",
+                            "ID recibido desde ProduktuakPantaila: $id"
+                        )
+
+                        navController.navigate("producto/$id")
+
+                        Log.d(
+                            "NAVEGACION",
+                            "Navegando al producto: $id"
+                        )
+                    }
+                )
+            }
+            composable(
+                route = "producto/{id}",
+                arguments = listOf(
+                    navArgument("id") {
+                        type = NavType.StringType
+                    }
+                )
+            ) { backStackEntry ->
+
+                val id = backStackEntry.arguments?.getString("id") ?: ""
+
+                Log.d(
+                    "NAVEGACION",
+                    "ENTRANDO EN DETALLES. ID: $id"
+                )
+
+                DetalleProductoScreen(
+                    productoId = id,
+                    onVolver = {
+                        navController.popBackStack()
+                    }
+                )
             }
 
             composable("carrito") {

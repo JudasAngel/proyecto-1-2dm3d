@@ -1,274 +1,267 @@
 package com.example.login.ui.pantailak
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.apparrese.R
-
-private val ArreseGorria = Color(0xFFEF343B)
-private val GrisSuave = Color(0xFFF5F5F5)
-private val TextoGris = Color(0xFF757575)
+import com.example.main.ui.data.Produktua
+import com.example.main.ui.data.produktuZerrenda
+import com.example.main.ui.theme.ArreseGorria
+import com.google.firebase.firestore.FirebaseFirestore
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DetalleProductoScreen() {
-    var menuAbierto by remember { mutableStateOf(false) }
-    var cantidad by remember { mutableStateOf(1) }
-    val precioUnitario = 2.40
-    val total = precioUnitario * cantidad
+fun DetalleProductoScreen(
+    productoId: String = "",
+    onVolver: () -> Unit = {},
+    onSaskiraGehitu: (Produktua) -> Unit = {}
+) {
+    val context = LocalContext.current
+
+    var produktua by remember { mutableStateOf<Produktua?>(null) }
+    var kargatzen by remember { mutableStateOf(true) }
+    var errorea by remember { mutableStateOf<String?>(null) }
+
+    // Produktua Firestore-tik kargatu
+    LaunchedEffect(productoId) {
+        if (productoId.isBlank()) {
+            errorea = "Ez da produkturik hautatu"
+            kargatzen = false
+            return@LaunchedEffect
+        }
+
+        FirebaseFirestore.getInstance()
+            .collection("produktuak")
+            .document(productoId)
+            .get()
+            .addOnSuccessListener { document ->
+                if (document.exists()) {
+                    produktua = Produktua(
+                        id = document.id,
+                        izena = document.getString("izena") ?: "",
+                        deskribapena = document.getString("deskribapena") ?: "",
+                        prezioa = document.getDouble("prezioa") ?: 0.0,
+                        argazkia = document.getString("argazkia"),
+                        stocka = (document.getLong("stock") ?: 0L).toInt(),
+                        mota = (document.getLong("mota") ?: 0L).toInt()
+                    )
+                } else {
+                    errorea = "Ez da produktua aurkitu"
+                }
+
+                kargatzen = false
+            }
+            .addOnFailureListener { exception ->
+                errorea = exception.message ?: "Errorea produktua kargatzean"
+                kargatzen = false
+            }
+    }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
+
+        // Goiko barra gorria eta logoa
         topBar = {
             TopAppBar(
-                modifier = Modifier.height(96.dp),
+                modifier = Modifier.height(90.dp),
                 title = {
                     Image(
-                        painter = painterResource(R.drawable.logoarrese2),
-                        contentDescription = "Logo Arrese",
-                        modifier = Modifier.height(65.dp)
+                        painter = painterResource(id = R.drawable.logoarrese2),
+                        contentDescription = "Arrese logoa",
+                        modifier = Modifier.height(58.dp)
                     )
                 },
-                actions = {
-                    Box {
-                        IconButton(onClick = { menuAbierto = true }) {
-                            Icon(
-                                imageVector = Icons.Filled.Menu,
-                                contentDescription = "Abrir menú",
-                                tint = Color.White,
-                                modifier = Modifier.size(30.dp)
-                            )
-                        }
-                        DropdownMenu(
-                            expanded = menuAbierto,
-                            onDismissRequest = { menuAbierto = false }
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text("Opción provisional") },
-                                onClick = { menuAbierto = false }
-                            )
-                        }
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = ArreseGorria)
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = ArreseGorria
+                )
             )
         },
 
-    ) { innerPadding ->
+        // Beheko zatia: guztira eta botoiak
+        bottomBar = {
+            produktua?.let { item ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 10.dp)
+                ) {
+                    Text(
+                        text = "Guztira: %.2f €".format(item.prezioa),
+                        fontSize = 19.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier
+                            .align(Alignment.End)
+                            .padding(bottom = 10.dp)
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = onVolver,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(56.dp)
+                        ) {
+                            Text(
+                                text = "Itzuli",
+                                fontSize = 18.sp
+                            )
+                        }
+
+                        Button(
+                            onClick = {
+                                produktua?.let { producto ->
+                                    produktuZerrenda.add(producto.id)
+                                    onSaskiraGehitu(producto)
+
+                                    Toast.makeText(
+                                        context,
+                                        "Produktua saskira gehitu da",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(56.dp),
+                            enabled = item.stocka > 0
+                        ) {
+                            Text(
+                                text = "Saskira gehitu",
+                                fontSize = 18.sp
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    ) { paddingValues ->
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
+                .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 24.dp),
-            horizontalAlignment = Alignment.Start
+                .padding(horizontal = 20.dp)
         ) {
-
-            // 1. Imagen del producto con fondo gris suave y esquinas redondeadas
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(280.dp)
-                    .background(GrisSuave, shape = RoundedCornerShape(16.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(text = "Imagen del producto", fontSize = 14.sp, color = TextoGris)
-            }
-
-            Spacer(modifier = Modifier.height(28.dp))
-
-            // 2. Título con fuente Serif
-            Text(
-                text = "Gurinezko\nopila",
-                fontSize = 30.sp,
-                fontFamily = FontFamily.Serif,
-                fontWeight = FontWeight.Normal,
-                color = Color.Black,
-                lineHeight = 34.sp
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // 3. Precio unitario
-            Text(
-                text = "2,40 €",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color.Black
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // 4. Línea divisoria fina gris
-            HorizontalDivider(
-                color = Color.LightGray.copy(alpha = 0.5f),
-                thickness = 1.dp
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // 5. Descripción
-            Text(
-                text = "Betiko klasikoa: opil samur eta harroa, " +
-                        "gurin-krema tradizionalarekin betea. " +
-                        "Bilboko benetako zaporea.",
-                fontSize = 15.sp,
-                lineHeight = 22.sp,
-                color = TextoGris
-            )
-
-            Spacer(modifier = Modifier.height(40.dp))
-
-            // 6. Total alineado a la derecha
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Totala: ",
-                    fontSize = 16.sp,
-                    color = TextoGris
-                )
-                Text(
-                    text = "%.2f€".format(total).replace(".", ","),
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // 7. Fila con el selector de cantidad + botón
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-
-                // Selector de cantidad mejorado
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = GrisSuave,
-                    modifier = Modifier.height(48.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        modifier = Modifier.padding(horizontal = 4.dp)
+            when {
+                kargatzen -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 50.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        // Botón restar
-                        IconButton(
-                            onClick = { if (cantidad > 1) cantidad-- },
-                            modifier = Modifier.size(36.dp)
-                        ) {
-                            Text(
-                                text = "−",
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = if (cantidad > 1) ArreseGorria else Color.LightGray
-                            )
-                        }
-
-                        // Número
-                        Text(
-                            text = cantidad.toString(),
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.Black,
-                            modifier = Modifier.width(28.dp),
-                            textAlign = TextAlign.Center
-                        )
-
-                        // Botón sumar
-                        IconButton(
-                            onClick = { cantidad++ },
-                            modifier = Modifier.size(36.dp)
-                        ) {
-                            Text(
-                                text = "+",
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = ArreseGorria
-                            )
-                        }
+                        CircularProgressIndicator()
                     }
                 }
 
-                // Botón "Saskira gehitu" ocupando el resto del ancho
-                Button(
-                    onClick = { /* Acción de añadir al carrito con cantidad */ },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(48.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = ArreseGorria),
-                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
-                ) {
+                errorea != null -> {
                     Text(
-                        text = "Saskira gehitu",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        text = errorea ?: "",
+                        modifier = Modifier.padding(top = 30.dp),
+                        color = MaterialTheme.colorScheme.error,
+                        fontSize = 18.sp
                     )
                 }
-            }
 
-            Spacer(modifier = Modifier.height(24.dp))
+                produktua != null -> {
+                    val item = produktua!!
+
+                    // Produktuaren irudia
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 55.dp, bottom = 35.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        val imageName = item.argazkia
+                            ?.substringBeforeLast(".")
+                            ?.lowercase()
+                            ?.replace(" ", "_")
+                            ?: ""
+
+                        val imageId = context.resources.getIdentifier(
+                            imageName,
+                            "drawable",
+                            context.packageName
+                        )
+
+                        Image(
+                            painter = painterResource(
+                                id = if (imageId != 0) {
+                                    imageId
+                                } else {
+                                    R.drawable.predeterminada
+                                }
+                            ),
+                            contentDescription = item.izena,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(260.dp)
+                        )
+                    }
+
+                    // Produktuaren izena
+                    Text(
+                        text = item.izena,
+                        fontSize = 34.sp,
+                        lineHeight = 42.sp,
+                        fontFamily = FontFamily.Serif,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Prezioa
+                    Text(
+                        text = "%.2f €".format(item.prezioa),
+                        fontSize = 21.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(modifier = Modifier.height(25.dp))
+
+                    // Deskribapena
+                    Text(
+                        text = "Deskribapena",
+                        fontSize = 21.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = item.deskribapena,
+                        fontSize = 17.sp,
+                        lineHeight = 27.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(25.dp))
+
+                    // Stocka
+                    Text(
+                        text = "Stock: ${item.stocka}",
+                        fontSize = 17.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(20.dp))
+                }
+            }
         }
     }
-}
-
-@Preview(
-    showBackground = true,
-    showSystemUi = true,
-    name = "DetalleProductoScreen"
-)
-@Composable
-fun DetalleProductoScreenPreview() {
-    DetalleProductoScreen()
 }
