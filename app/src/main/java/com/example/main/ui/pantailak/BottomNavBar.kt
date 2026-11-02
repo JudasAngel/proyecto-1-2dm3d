@@ -32,6 +32,7 @@ private data class ItemNav(
 @Composable
 fun BottomNavBar(
     navController: NavHostController,
+    userType: Long?,
     onSalir: () -> Unit
 ) {
 
@@ -40,28 +41,17 @@ fun BottomNavBar(
 
     val rutaActual = navBackStackEntry?.destination?.route
 
-    val items = listOf(
-        ItemNav(
-            ruta = "home",
-            icono = Icons.Default.Home,
-            descripcion = "Home"
-        ),
-        ItemNav(
-            ruta = "carrito",
-            icono = Icons.Default.ShoppingCart,
-            descripcion = "Carrito"
-        ),
-        ItemNav(
-            ruta = "crud",
-            icono = Icons.Default.Build,
-            descripcion = "CRUD"
-        ),
-        ItemNav(
-            ruta = null,
-            icono = Icons.Default.Logout,
-            descripcion = "Salir"
-        )
-    )
+    val items = buildList {
+        add(ItemNav(ruta = "home", icono = Icons.Default.Home, descripcion = "Home"))
+        add(ItemNav(ruta = "carrito", icono = Icons.Default.ShoppingCart, descripcion = "Carrito"))
+
+        // Show CRUD option only if userType is 2
+        if (userType == 2L) {
+            add(ItemNav(ruta = "crud", icono = Icons.Default.Build, descripcion = "CRUD"))
+        }
+
+        add(ItemNav(ruta = null, icono = Icons.Default.Logout, descripcion = "Salir"))
+    }
 
     NavigationBar(
         containerColor = ArreseGorria
