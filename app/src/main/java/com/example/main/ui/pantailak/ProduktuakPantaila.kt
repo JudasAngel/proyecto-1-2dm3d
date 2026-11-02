@@ -39,7 +39,9 @@ data class Categoria(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProduktuakPantaila() {
+fun ProduktuakPantaila(
+    onProduktuaClick: (String) -> Unit = {},
+) {
 
     // Kategoria-menua irekita dagoen ala ez kontrolatzen du.
     var menuAbierto by remember {
@@ -505,7 +507,11 @@ fun ProduktuakPantaila() {
 
                     ProductuItem(
                         producto = producto,
-                        tipo = tipo
+                        tipo = tipo,
+                        onClick = {
+                            android.util.Log.d("NAVEGACION", "CLICK EN PRODUCTO: ${producto.id}")
+                            onProduktuaClick(producto.id)
+                        }
                     )
                 }
             }
@@ -517,9 +523,11 @@ fun ProduktuakPantaila() {
 @Composable
 fun ProductuItem(
     producto: Produktua,
-    tipo: String
+    tipo: String,
+    onClick: () -> Unit = {}
 ) {
     Card(
+        onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp),
@@ -585,7 +593,6 @@ fun ProductuItem(
                         text = "Sartu karritora ➝",
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier
-                            .fillMaxWidth()
                             .clickable {
                                 produktuZerrenda.add(producto.id)
                                 Toast.makeText(context, "${producto.izena} karritora gehitu da", Toast.LENGTH_SHORT).show()
