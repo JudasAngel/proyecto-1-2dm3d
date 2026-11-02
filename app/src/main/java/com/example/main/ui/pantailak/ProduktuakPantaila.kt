@@ -1,5 +1,6 @@
 package com.example.main.ui.pantailak
 
+import android.app.Activity
 import android.os.Handler
 import android.os.Looper
 import java.util.concurrent.atomic.AtomicBoolean
@@ -30,6 +31,7 @@ import com.google.firebase.firestore.Query
 import java.util.Locale
 import com.example.main.ui.data.Produktua
 import com.example.main.ui.data.produktuZerrenda
+import java.util.concurrent.Executors
 
 // Firestore-ko kategoria baten informazioa gordetzen du.
 data class Categoria(
@@ -40,6 +42,10 @@ data class Categoria(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProduktuakPantaila() {
+
+    val context = LocalContext.current
+    val activity = context as? Activity
+    val haria = remember { Executors.newSingleThreadExecutor() }
 
     // Kategoria-menua irekita dagoen ala ez kontrolatzen du.
     var menuAbierto by remember {
@@ -132,11 +138,13 @@ fun ProduktuakPantaila() {
     DisposableEffect(db) {
 
         val listener = db.collection("product_type")
-            .addSnapshotListener { snapshot, error ->
+            .addSnapshotListener(haria) { snapshot, error ->
 
                 if (error != null) {
-                    errorTipos = true
-                    cargandoTipos = false
+                    activity?.runOnUiThread{
+                        errorTipos = true
+                        cargandoTipos = false
+                    }
 
                     android.util.Log.e(
                         "DEBUG_FIREBASE",
@@ -146,8 +154,7 @@ fun ProduktuakPantaila() {
 
                 } else if (snapshot != null) {
 
-                    // Dokumentuak Categoria objektu bihurtzen ditu.
-                    categorias = snapshot.documents
+                    val lista = snapshot.documents
                         .mapNotNull { doc ->
 
                             val nombre = doc.getString("izena")
@@ -165,9 +172,11 @@ fun ProduktuakPantaila() {
                         .sortedBy {
                             it.id.toIntOrNull() ?: Int.MAX_VALUE
                         }
-
-                    cargandoTipos = false
-                    errorTipos = false
+                    activity?.runOnUiThread {
+                        categorias = lista
+                        cargandoTipos = false
+                        errorTipos = false
+                    }
                 }
             }
 
@@ -197,12 +206,13 @@ fun ProduktuakPantaila() {
         cargandoProductos = true
         errorProductos = false
 
-        val listener = consulta.addSnapshotListener { snapshot, error ->
+        val listener = consulta.addSnapshotListener(haria) { snapshot, error ->
 
             if (error != null) {
-
-                errorProductos = true
-                cargandoProductos = false
+                activity?.runOnUiThread {
+                    errorProductos = true
+                    cargandoProductos = false
+                }
 
                 android.util.Log.e(
                     "DEBUG_FIREBASE",
@@ -211,47 +221,47 @@ fun ProduktuakPantaila() {
                 )
 
             } else if (snapshot != null) {
+                val lista = snapshot.documents
+                    .mapNotNull { doc ->
 
-                productos = snapshot.documents.mapNotNull { doc ->
+                        val id = doc.id
 
-                    val id = doc.id
+                        val nombre = doc.getString("izena")
+                            ?: return@mapNotNull null
 
-                    val nombre = doc.getString("izena")
-                        ?: return@mapNotNull null
+                        val precio = when (val p = doc.get("prezioa")) {
+                            is Number -> p.toDouble()
+                            is String -> p.replace(",", ".").toDoubleOrNull() ?: 0.0
+                            else -> 0.0
+                        }
 
-                    val precio = (doc.get("prezioa") as? Number)?.toDouble()
-                        ?: doc.getString("prezioa")?.toDoubleOrNull()
-                        ?: 0.0
+                        val motaId = doc.getLong("mota")?.toString()
+                            ?: doc.getString("mota")
 
-                    val rawMota = doc.get("mota")
-                    val motaId = (rawMota as? Number)?.toString()
-                        ?: (rawMota as? String)
+                        val nombreCategoria = categorias.find {
+                            it.id == motaId
+                        }?.izena
 
-                    val nombreCategoria = categorias.find {
-                        it.id == motaId
-                    }?.izena
+                        val tipo = categoria?.izena
+                            ?: nombreCategoria
+                            ?: "Kategoriarik gabe"
 
-                    val tipo = categoria?.izena
-                        ?: nombreCategoria
-                        ?: "Kategoriarik gabe"
+                        val motaNumero = motaId?.toIntOrNull() ?: 0
 
-                    val motaNumero = (rawMota as? Number)?.toInt()
-                        ?: (rawMota as? String)?.toIntOrNull()
-                        ?: 0
+                        Produktua(
+                            id = id,
+                            mota = motaNumero,
+                            izena = nombre,
+                            deskribapena = doc.getString("deskribapena") ?: "",
+                            prezioa = precio,
+                            argazkia = doc.getString("argazkia")                    )
+                    }
+                activity?.runOnUiThread {
+                    productos = lista
+                    cargandoProductos = false
+                    errorProductos = false
 
-                    Produktua(
-                        id = id,
-                        mota = motaNumero,
-                        izena = nombre,
-                        deskribapena = doc.getString("deskribapena") ?: "",
-                        prezioa = precio,
-                        argazkia = doc.getString("argazkia")
-                    )
                 }
-
-                cargandoProductos = false
-                errorProductos = false
-
                 android.util.Log.d(
                     "DEBUG_FIREBASE",
                     "Kargatutako produktuak: ${productos.size}"
