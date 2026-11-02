@@ -1,6 +1,7 @@
 package com.example.main.ui.pantailak
 
 import android.widget.Toast
+import androidx.activity.compose.LocalActivity
 import java.util.Locale
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,6 +31,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -67,48 +69,26 @@ fun SaskiPantaila(
     var kargatzen by remember { mutableStateOf(false) }
     var errorea by remember { mutableStateOf<String?>(null) }
 //cargamos al incial la pantalla y le apsamo la lista de productos
-    LaunchedEffect(produktuZerrenda.toList()) {
-        //is la lista no etsa vacia
-        if (produktuZerrenda.isNotEmpty()) {
-            //ponemso que craga y eror sige como null
-            kargatzen = true
-            errorea = null
-            //contamos la cantida por porducto
-            val idCounts = produktuZerrenda.groupingBy { it }.eachCount()
-            //lisat de indicadores unicos
-            val uniqueIds = idCounts.keys.toList()
+    val activity = LocalActivity.current
 
-            val db = FirebaseFirestore.getInstance()
-            db.collection("produktuak")
-                //los porductos que el id conicida co los de uniqueids
-                .whereIn(FieldPath.documentId(), uniqueIds)
-                .get()
-                .addOnSuccessListener { querySnapshot ->
-                    //metenmos los datos en la lista y trnasfomamos lodatos en obejto ysado la clase produktuak
-                    val list = querySnapshot.documents.mapNotNull { doc ->
-                        val p = doc.toObject(Produktua::class.java)
-                        if (p != null) {
-                            //crea un objeto con los datos de la query
-                            SaskiItem(
-                                id = doc.id,
-                                izena = p.izena,
-                                prezioa = p.prezioa,
-                                kantitatea = idCounts[doc.id] ?: 1
-                            )
-                        } else null
-                    }
-                    //ahora ponemos en sakiitems los datos de la lisat
-                    saskiItems = list
-                    kargatzen = false
-                }
-                .addOnFailureListener { e ->
-                    errorea = e.message ?: "Errorea saskia kargatzean"
-                    kargatzen = false
-                }
-        } else {
+    DisposableEffect(Unit) {
+        var hari: Thread? = null
+        val ids = produktuZerrenda.toList()          // copia hecha en el hilo principal
+
+        if (ids.isEmpty()) {
             saskiItems = emptyList()
             kargatzen = false
+        } else if (activity != null) {
+            kargatzen = true
+            errorea = null
+            hari = kargatuSaskia(
+                activity = activity,
+                ids = ids,
+                onOk = { saskiItems = it; kargatzen = false },
+                onErr = { errorea = it; kargatzen = false }
+            )
         }
+        onDispose { hari?.interrupt() }              // al salir de la pantalla se cancela la carga
     }
 //uan multiplicaion de los precion de sakiitems miltiplican precio por katidad esto es apr cada porductos
     val subtotal = saskiItems.sumOf { it.prezioa * it.kantitatea }
