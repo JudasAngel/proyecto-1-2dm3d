@@ -1,5 +1,8 @@
 package com.example.main.ui.pantailak
 
+import android.os.Handler
+import android.os.Looper
+import java.util.concurrent.atomic.AtomicBoolean
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -15,7 +18,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -37,8 +39,7 @@ data class Categoria(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProduktuakPantaila(
-) {
+fun ProduktuakPantaila() {
 
     // Kategoria-menua irekita dagoen ala ez kontrolatzen du.
     var menuAbierto by remember {
@@ -69,6 +70,12 @@ fun ProduktuakPantaila(
         mutableStateOf<List< Produktua>>(emptyList())
     }
 
+    // Bilatzailean idatzitako testua gordetzen du.
+    var bilaketaTestua by remember { mutableStateOf("") }
+
+    // Bilaketaren emaitzak gordetzea
+    var productosFiltrados by remember { mutableStateOf<List<Produktua>>(emptyList()) }
+
     var cargandoProductos by remember {
         mutableStateOf(true)
     }
@@ -82,12 +89,46 @@ fun ProduktuakPantaila(
         FirebaseFirestore.getInstance()
     }
 
-    // --------------------------------------------------
-    // 1. KATEGORIAK KARGATZEA
-    // Kolekzioa: product_type
-    // Erabilitako eremua: izena
-    // --------------------------------------------------
+    // Bilaketa-haria sortu eta kudeatzen du.
+    DisposableEffect(bilaketaTestua, productos) {
 
+        val cancelado = AtomicBoolean(false)
+
+        val texto = bilaketaTestua.trim()
+
+        val hilo = Thread {
+            // Produktuen izenetan bilaketa egiten du.
+            val resultado = productos.filter { producto ->
+                producto.izena.contains(
+                    texto,
+                    ignoreCase = true
+                )
+            }
+
+            // Emaitza interfaze nagusira bidaltzen du.
+            if (!cancelado.get()) {
+                Handler(Looper.getMainLooper()).post {
+                    if (!cancelado.get()) {
+                        productosFiltrados = resultado
+                    }
+                }
+            }
+        }
+
+        hilo.start()
+
+        // Bilaketa aldatzean, aurreko haria ezeztatzen du.
+        onDispose {
+            cancelado.set(true)
+            hilo.interrupt()
+        }
+    }
+
+
+
+
+
+    // KATEGORIAK KARGATZEA
     DisposableEffect(db) {
 
         val listener = db.collection("product_type")
@@ -136,11 +177,7 @@ fun ProduktuakPantaila(
         }
     }
 
-    // --------------------------------------------------
     // 2. PRODUKTUAK KARGATZEA
-    // Kolekzioa: produktuak
-    // --------------------------------------------------
-
     DisposableEffect(db, categoriaSeleccionada, categorias) {
         var consulta: Query = db.collection("produktuak")
 
@@ -227,15 +264,7 @@ fun ProduktuakPantaila(
         }
     }
 
-    // --------------------------------------------------
     // 3. PANTAILAREN DISEINUA
-    // --------------------------------------------------
-
-
-
-
-
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -399,6 +428,24 @@ fun ProduktuakPantaila(
                         color = ArreseGorria.copy(alpha = 0.35f),
                         thickness = 1.dp
                     )
+
+                    // Produktuak bilatzeko testu-eremua.
+                    OutlinedTextField(
+                        value = bilaketaTestua,
+                        onValueChange = { testuaBerria ->
+                            bilaketaTestua = testuaBerria
+                        },
+                        label = {
+                            Text("Bilatu produktua")
+                        },
+                        placeholder = {
+                            Text("Idatzi produktuaren izena")
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 16.dp),
+                        singleLine = true
+                    )
                 }
             }
 
@@ -448,7 +495,7 @@ fun ProduktuakPantaila(
                 }
             } else {
                 items(
-                    items = productos,
+                    items = productosFiltrados,
                     key = { it.id }
                 ) { producto ->
 
