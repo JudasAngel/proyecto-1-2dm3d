@@ -1,7 +1,12 @@
 package com.example.apparrese
 
 import android.util.Log
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -31,6 +36,9 @@ import com.example.main.ui.pantailak.ProduktuakEguneratu
 import com.example.main.ui.pantailak.SaskiPantaila
 import com.google.firebase.auth.FirebaseAuth
 import com.example.login.ui.pantailak.DetalleProductoScreen
+import com.example.main.ui.data.Kategoria
+import com.example.main.ui.pantailak.ArreseTopBar
+import com.example.main.ui.pantailak.KategoriaMenua
 import com.google.firebase.firestore.FirebaseFirestore
 
 @Composable
@@ -85,14 +93,9 @@ fun NireAplikazioa() {
     val rutaActual = navBackStackEntry?.destination?.route
     LaunchedEffect(rutaActual) {
         Log.d("NAVEGACION", "Ruta actual: $rutaActual")
-    }    // La barra solo aparece en estas pantallas.
-    val rutasConBarra = setOf(
-        "home",
-        "carrito",
-        "crud",
-        "producto/{id}"
-    )
+    }
     // 2. Observador de ciclo de vida (pausa y reanuda)
+
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
@@ -105,15 +108,47 @@ fun NireAplikazioa() {
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
+    var kategoriak by remember { mutableStateOf<List<Kategoria>>(emptyList()) }
+    var kategoriaAukeratua by remember { mutableStateOf<Kategoria?>(null) }
+
+    DisposableEffect(Unit) {
+        val listener = FirebaseFirestore.getInstance()
+            .collection("product_type")
+            .addSnapshotListener { snapshot, _ ->
+                if (snapshot != null) {
+                    kategoriak = snapshot.documents
+                        .mapNotNull { doc ->
+                            doc.getString("izena")?.let { Kategoria(doc.id, it) }
+                        }
+                        .sortedBy { it.id.toIntOrNull() ?: Int.MAX_VALUE }
+                }
+            }
+        onDispose { listener.remove() }
+    }
+
+    val hasierakoRuta = remember {
+        if (FirebaseAuth.getInstance().currentUser != null) "home" else "login"
+    }
+
+    val rutasConBarra = setOf("home", "carrito", "crud", "producto/{id}")
     Scaffold(
-
-
+        topBar = {
+            if (rutaActual != "login") {
+                ArreseTopBar(
+                    ekintzak = {
+                        if (rutaActual == "home") {
+                            KategoriaMenua(
+                                kategoriak = kategoriak,
+                                aukeratua = kategoriaAukeratua,
+                                onAukeratu = { kategoriaAukeratua = it }
+                            )
+                        }
+                    }
+                )
+            }
+        },
         bottomBar = {
-            if (rutaActual == "home" ||
-                rutaActual == "carrito" ||
-                rutaActual == "crud"
-            ) {
-
+            if (rutaActual in rutasConBarra) {
                 BottomNavBar(
                     navController = navController,
                     userType = userType,
@@ -128,112 +163,88 @@ fun NireAplikazioa() {
                     }
                 )
             }
+        },
+        floatingActionButton = {
+            if (rutaActual == "crud") {
+                FloatingActionButton(onClick = { navController.navigate("eguneratu") }) {
+                    Icon(Icons.Default.Add, contentDescription = "Gehitu")
+                }
+            }
         }
-
-
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = "login",
+            startDestination = hasierakoRuta,
             modifier = Modifier.padding(innerPadding)
         ) {
             composable("login") {
                 SaioHasieraPantaila(
+                    modifier = Modifier.fillMaxSize(),
                     onLoginExitoso = {
                         MusikaKudeatzailea.hasi(context)
-                        Log.d("NAVEGACION", "Login exitoso: navegando a HOME")
-
                         navController.navigate("home") {
-                            popUpTo("login") {
-                                inclusive = true
-                            }
+                            popUpTo("login") { inclusive = true }
                             launchSingleTop = true
                         }
-
-                        Log.d(
-                            "NAVEGACION",
-                            "Navegación a HOME solicitada"
-                        )
+                    },
+                    onErregistratu = {
+                        navController.navigate("erregistro")
                     }
                 )
             }
 
-            composable("registro") {
-                ErregistroPantaila()
+            composable("erregistro") {
+                ErregistroPantaila(
+                    modifier = Modifier.fillMaxSize(),
+                    onBack = { navController.popBackStack() }
+                )
             }
 
             composable("home") {
                 ProduktuakPantaila(
-
-                    onProduktuaClick = { id ->
-
-                        Log.d(
-                            "NAVEGACION",
-                            "ID recibido desde ProduktuakPantaila: $id"
-                        )
-
-                        navController.navigate("producto/$id")
-
-                        Log.d(
-                            "NAVEGACION",
-                            "Navegando al producto: $id"
-                        )
-                    }
+                    modifier = Modifier.fillMaxSize(),
+                    kategoriak = kategoriak,
+                    kategoriaAukeratua = kategoriaAukeratua,
+                    onProduktuaClick = { id -> navController.navigate("producto/$id") }
                 )
             }
+
             composable(
                 route = "producto/{id}",
-                arguments = listOf(
-                    navArgument("id") {
-                        type = NavType.StringType
-                    }
-                )
+                arguments = listOf(navArgument("id") { type = NavType.StringType })
             ) { backStackEntry ->
-
                 val id = backStackEntry.arguments?.getString("id") ?: ""
-
-                Log.d(
-                    "NAVEGACION",
-                    "ENTRANDO EN DETALLES. ID: $id"
-                )
-
                 DetalleProductoScreen(
+                    modifier = Modifier.fillMaxSize(),
                     productoId = id,
-                    onVolver = {
-                        navController.popBackStack()
-                    }
+                    onVolver = { navController.popBackStack() }
                 )
             }
 
             composable("carrito") {
-                SaskiPantaila()
+                SaskiPantaila(modifier = Modifier.fillMaxSize())
             }
 
             composable("crud") {
                 if (userType == 2L) {
                     CRUDPantaila(
-                        onAdd = {
-                            // Navega a la pantalla sin pasar ningún ID (modo añadir)
-                            navController.navigate("eguneratu")
-                        },
-                        onEdit = { docId ->
-                            // Navega a la pantalla pasando el ID del producto (modo editar)
-                            navController.navigate("eguneratu/$docId")
-                        }
+                        modifier = Modifier.fillMaxSize(),
+                        onEdit = { docId -> navController.navigate("eguneratu/$docId") }
                     )
                 } else {
                     LaunchedEffect(Unit) {
                         navController.navigate("home") {
-                            popUpTo("home") {inclusive = true}
+                            popUpTo("home") { inclusive = true }
                         }
                     }
                 }
             }
 
-            // Ruta para AÑADIR un nuevo producto
             composable("eguneratu") {
                 ProduktuakEguneratu(
+                    modifier = Modifier.fillMaxSize(),
                     productId = null,
+                    kategoriak = kategoriak,
                     onAtzeraEgin = { navController.popBackStack() }
                 )
             }
@@ -242,18 +253,15 @@ fun NireAplikazioa() {
                 route = "eguneratu/{productId}",
                 arguments = listOf(navArgument("productId") { type = NavType.StringType })
             ) { backStackEntry ->
-                val productId = backStackEntry.arguments?.getString("productId")
-
                 ProduktuakEguneratu(
-                    productId = productId,
+                    modifier = Modifier.fillMaxSize(),
+                    productId = backStackEntry.arguments?.getString("productId"),
+                    kategoriak = kategoriak,
                     onAtzeraEgin = { navController.popBackStack() }
                 )
             }
-
-
-
-
         }
     }
 }
+
 

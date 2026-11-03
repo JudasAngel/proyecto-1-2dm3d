@@ -120,10 +120,10 @@ fun BottomNavBar(
 
                 colors = NavigationBarItemDefaults.colors(
                     selectedIconColor = Color.White,
-                    unselectedIconColor = Color.White,
+                    unselectedIconColor = Color.White.copy(alpha = 0.7f),
                     selectedTextColor = Color.White,
-                    unselectedTextColor = Color.White,
-                    indicatorColor = ArreseGorria
+                    unselectedTextColor = Color.White.copy(alpha = 0.7f),
+                    indicatorColor = Color.White.copy(alpha = 0.25f)
                 )
             )
         }
