@@ -1,161 +1,390 @@
 package com.example.main.ui.pantailak
 
+import android.app.Activity
+import android.os.Handler
+import android.os.Looper
+import java.util.concurrent.atomic.AtomicBoolean
+import android.widget.Toast
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.apparrese.R
+import com.example.main.IrudiKargatua
 import com.example.main.ui.theme.ArreseGorria
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
+import java.util.Locale
 import com.example.main.ui.data.Produktua
 import com.example.main.ui.data.produktuZerrenda
-import androidx.compose.foundation.clickable
-import android.widget.Toast
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.sp
-import com.google.firebase.firestore.FirebaseFirestore
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.lazy.items
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextAlign
-import com.example.main.ui.theme.ArreseBeltza
+import java.util.concurrent.Executors
+
+// Firestore-ko kategoria baten informazioa gordetzen du.
+data class Categoria(
+    val id: String,
+    val izena: String
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProduktuakPantaila() {
-    var menuAbierto by remember { mutableStateOf(false) }
-
-    var produktuak by remember {
-        mutableStateOf<List<Produktua>>(emptyList())
-    }
-    var motak by remember {
-        mutableStateOf<Map<Int, String>>(emptyMap())
-    }
-    var errorea by remember {
-        mutableStateOf<String?>(null)
-    }
-
-    LaunchedEffect(Unit) {
-        KargatuMotak { mapa ->
-            motak = mapa
-        }
-        ProduktuakKargatu(
-            resultado = { lista ->
-                produktuak = lista
-            },
-            errorea = { mensaje ->
-                errorea = mensaje
-            }
-        )
-
-    }
+fun ProduktuakPantaila(
+    onProduktuaClick: (String) -> Unit = {},
+) {
 
     val context = LocalContext.current
+    val activity = context as? Activity
+    val haria = remember { Executors.newSingleThreadExecutor() }
+
+    // Kategoria-menua irekita dagoen ala ez kontrolatzen du.
+    var menuAbierto by remember {
+        mutableStateOf(false)
+    }
+
+    // Firestore-tik lortutako kategoriak gordetzen ditu.
+    var categorias by remember {
+        mutableStateOf<List<Categoria>>(emptyList())
+    }
+
+    // null bada, produktu guztiak erakusten dira.
+    var categoriaSeleccionada by remember {
+        mutableStateOf<Categoria?>(null)
+    }
+
+    // Kategorien karga- eta errore-egoerak.
+    var cargandoTipos by remember {
+        mutableStateOf(true)
+    }
+
+    var errorTipos by remember {
+        mutableStateOf(false)
+    }
+
+    // Produktuen zerrenda eta haien karga-egoerak.
+    var productos by remember {
+        mutableStateOf<List< Produktua>>(emptyList())
+    }
+
+    // Bilatzailean idatzitako testua gordetzen du.
+    var bilaketaTestua by remember { mutableStateOf("") }
+
+    // Bilaketaren emaitzak gordetzea
+    var productosFiltrados by remember { mutableStateOf<List<Produktua>>(emptyList()) }
+
+    var cargandoProductos by remember {
+        mutableStateOf(true)
+    }
+
+    var errorProductos by remember {
+        mutableStateOf(false)
+    }
+
+    // Firestore-ren instantzia lortzen du.
+    val db = remember {
+        FirebaseFirestore.getInstance()
+    }
+
+    // Bilaketa-haria sortu eta kudeatzen du.
+    DisposableEffect(bilaketaTestua, productos) {
+
+        val cancelado = AtomicBoolean(false)
+
+        val texto = bilaketaTestua.trim()
+
+        val hilo = Thread {
+            // Produktuen izenetan bilaketa egiten du.
+            val resultado = productos.filter { producto ->
+                producto.izena.contains(
+                    texto,
+                    ignoreCase = true
+                )
+            }
+
+            // Emaitza interfaze nagusira bidaltzen du.
+            if (!cancelado.get()) {
+                Handler(Looper.getMainLooper()).post {
+                    if (!cancelado.get()) {
+                        productosFiltrados = resultado
+                    }
+                }
+            }
+        }
+
+        hilo.start()
+
+        // Bilaketa aldatzean, aurreko haria ezeztatzen du.
+        onDispose {
+            cancelado.set(true)
+            hilo.interrupt()
+        }
+    }
 
 
 
+
+
+    // KATEGORIAK KARGATZEA
+    DisposableEffect(db) {
+
+        val listener = db.collection("product_type")
+            .addSnapshotListener(haria) { snapshot, error ->
+
+                if (error != null) {
+                    activity?.runOnUiThread{
+                        errorTipos = true
+                        cargandoTipos = false
+                    }
+
+                    android.util.Log.e(
+                        "DEBUG_FIREBASE",
+                        "Errorea kategoriak kargatzean",
+                        error
+                    )
+
+                } else if (snapshot != null) {
+
+                    val lista = snapshot.documents
+                        .mapNotNull { doc ->
+
+                            val nombre = doc.getString("izena")
+
+                            if (nombre != null) {
+                                Categoria(
+                                    id = doc.id,
+                                    izena = nombre
+                                )
+                            } else {
+                                null
+                            }
+                        }
+                        // Kategoriak ID numerikoaren arabera ordenatzen ditu.
+                        .sortedBy {
+                            it.id.toIntOrNull() ?: Int.MAX_VALUE
+                        }
+                    activity?.runOnUiThread {
+                        categorias = lista
+                        cargandoTipos = false
+                        errorTipos = false
+                    }
+                }
+            }
+
+        // Pantailatik irtetean entzulea kentzen du.
+        onDispose {
+            listener.remove()
+        }
+    }
+
+    // 2. PRODUKTUAK KARGATZEA
+    DisposableEffect(db, categoriaSeleccionada, categorias) {
+        var consulta: Query = db.collection("produktuak")
+
+        val categoria = categoriaSeleccionada
+
+        if (categoria != null) {
+
+            val idMota = categoria.id.toIntOrNull()
+
+            consulta = if (idMota != null) {
+                consulta.whereEqualTo("mota", idMota)
+            } else {
+                consulta.whereEqualTo("mota", categoria.id)
+            }
+        }
+
+        cargandoProductos = true
+        errorProductos = false
+
+        val listener = consulta.addSnapshotListener(haria) { snapshot, error ->
+
+            if (error != null) {
+                activity?.runOnUiThread {
+                    errorProductos = true
+                    cargandoProductos = false
+                }
+
+                android.util.Log.e(
+                    "DEBUG_FIREBASE",
+                    "Errorea produktuak kargatzean",
+                    error
+                )
+
+            } else if (snapshot != null) {
+                val lista = snapshot.documents
+                    .mapNotNull { doc ->
+
+                        val id = doc.id
+
+                        val nombre = doc.getString("izena")
+                            ?: return@mapNotNull null
+
+                        val precio = when (val p = doc.get("prezioa")) {
+                            is Number -> p.toDouble()
+                            is String -> p.replace(",", ".").toDoubleOrNull() ?: 0.0
+                            else -> 0.0
+                        }
+
+                        val motaId = doc.getLong("mota")?.toString()
+                            ?: doc.getString("mota")
+
+                        val nombreCategoria = categorias.find {
+                            it.id == motaId
+                        }?.izena
+
+                        val tipo = categoria?.izena
+                            ?: nombreCategoria
+                            ?: "Kategoriarik gabe"
+
+                        val motaNumero = motaId?.toIntOrNull() ?: 0
+
+                        Produktua(
+                            id = id,
+                            mota = motaNumero,
+                            izena = nombre,
+                            deskribapena = doc.getString("deskribapena") ?: "",
+                            prezioa = precio,
+                            argazkia = doc.getString("argazkia")                    )
+                    }
+                activity?.runOnUiThread {
+                    productos = lista
+                    cargandoProductos = false
+                    errorProductos = false
+
+                }
+                android.util.Log.d(
+                    "DEBUG_FIREBASE",
+                    "Kargatutako produktuak: ${productos.size}"
+                )
+            }
+        }
+
+        onDispose {
+            listener.remove()
+        }
+    }
+
+    // 3. PANTAILAREN DISEINUA
     Scaffold(
-        // BARRA SUPERIOR
         topBar = {
             TopAppBar(
-                modifier = Modifier.height(110.dp),
+                modifier = Modifier.height(90.dp),
                 title = {
                     Image(
                         painter = painterResource(R.drawable.logoarrese2),
-                        contentDescription = "Logo Arrese",
-                        modifier = Modifier.height(70.dp)
+                        contentDescription = "Arrese logoa",
+                        modifier = Modifier.height(58.dp)
                     )
                 },
                 actions = {
-                    IconButton(
-                        onClick = { }
-                    ) {
-                        BadgedBox(
-                            badge = {
-                                if (produktuZerrenda.isNotEmpty()) {
-                                    Badge(
-                                        containerColor = Color.White,
-                                        contentColor = ArreseGorria
-                                    ) {
-                                        Text(
-                                            text = "${produktuZerrenda.size}",
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
-                                }
+                    Box {
+                        IconButton(
+                            onClick = {
+                                menuAbierto = true
                             }
                         ) {
                             Icon(
-                                painter = painterResource(R.drawable.shoppingcart),
-                                contentDescription = "Karritoa",
-                                tint = Color.White,
-                                modifier = Modifier.size(28.dp)
-                            )
-                        }
-                    }
-
-                    Box {
-                        IconButton(
-                            onClick = { menuAbierto = true }
-                        ) {
-                            Icon(
                                 imageVector = Icons.Filled.Menu,
-                                contentDescription = "Abrir menu",
+                                contentDescription = "Kategoriak ireki",
                                 tint = Color.White,
-                                modifier = Modifier.size(32.dp)
+                                modifier = Modifier.size(30.dp)
                             )
                         }
 
+                        // Iragazkia: fondo rojo eta testu zuria.
                         DropdownMenu(
                             expanded = menuAbierto,
                             onDismissRequest = {
                                 menuAbierto = false
-                            }
+                            },
+                            containerColor = ArreseGorria
                         ) {
                             DropdownMenuItem(
                                 text = {
-                                    Text("Opcion provisional")
+                                    Text(
+                                        text = "Produktu guztiak",
+                                        color = Color.White
+                                    )
                                 },
                                 onClick = {
+                                    categoriaSeleccionada = null
                                     menuAbierto = false
                                 }
                             )
+
+                            HorizontalDivider(
+                                color = Color.White.copy(alpha = 0.4f)
+                            )
+
+                            when {
+                                cargandoTipos -> {
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                text = "Kategoriak kargatzen...",
+                                                color = Color.White
+                                            )
+                                        },
+                                        enabled = false,
+                                        onClick = {}
+                                    )
+                                }
+
+                                errorTipos -> {
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                text = "Errorea kategoriak kargatzean",
+                                                color = Color.White
+                                            )
+                                        },
+                                        enabled = false,
+                                        onClick = {}
+                                    )
+                                }
+
+                                categorias.isEmpty() -> {
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                text = "Ez dago kategoriarik",
+                                                color = Color.White
+                                            )
+                                        },
+                                        enabled = false,
+                                        onClick = {}
+                                    )
+                                }
+
+                                else -> {
+                                    categorias.forEach { cat ->
+                                        DropdownMenuItem(
+                                            text = {
+                                                Text(
+                                                    text = cat.izena,
+                                                    color = Color.White
+                                                )
+                                            },
+                                            onClick = {
+                                                categoriaSeleccionada = cat
+                                                menuAbierto = false
+                                            }
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 },
@@ -165,256 +394,223 @@ fun ProduktuakPantaila() {
             )
         },
 
-        // BARRA INFERIOR
-        bottomBar = {
-            NavigationBar(
-                modifier = Modifier.height(64.dp),
-                containerColor = ArreseGorria,
-                windowInsets = WindowInsets(0.dp)
-            ) {
-                // ICONO INICIO
-                NavigationBarItem(
-                    selected = false,
-                    onClick = { },
-                    icon = {
-                        Image(
-                            painter = painterResource(R.drawable.home),
-                            contentDescription = "Hasiera",
-                            modifier = Modifier.size(24.dp),
-                            colorFilter = ColorFilter.tint(Color.White)
-                        )
-                    },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = Color.White,
-                        unselectedIconColor = Color.White,
-                        indicatorColor = ArreseGorria
-                    )
-                )
-
-                // ICONO PRODUCTOS
-                NavigationBarItem(
-                    selected = true,
-                    onClick = { },
-                    icon = {
-                        Image(
-                            painter = painterResource(R.drawable.shoppingcart),
-                            contentDescription = "Produktuak",
-                            modifier = Modifier.size(24.dp),
-                            colorFilter = ColorFilter.tint(Color.White)
-                        )
-                    },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = Color.White,
-                        unselectedIconColor = Color.White,
-                        indicatorColor = ArreseGorria
-                    )
-                )
-
-                // ICONO PERFIL
-                NavigationBarItem(
-                    selected = false,
-                    onClick = { },
-                    icon = {
-                        Image(
-                            painter = painterResource(R.drawable.perfil),
-                            contentDescription = "Profila",
-                            modifier = Modifier.size(24.dp),
-                            colorFilter = ColorFilter.tint(Color.White)
-                        )
-                    },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = Color.White,
-                        unselectedIconColor = Color.White,
-                        indicatorColor = ArreseGorria
-                    )
-                )
-            }
-        }
     ) { paddingValues ->
 
-        // CONTENIDO PRINCIPAL
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-                .padding(
-                    start = 16.dp,
-                    end = 16.dp,
-                    top = 16.dp
-                ),
-            horizontalAlignment = Alignment.CenterHorizontally
-
+                .padding(paddingValues),
+            contentPadding = PaddingValues(
+                start = 16.dp,
+                end = 16.dp,
+                top = 20.dp,
+                bottom = 20.dp
+            ),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             item {
-                Text(
-                    text = "Produktuak",
-                    fontSize = 30.sp,
-                    fontFamily = FontFamily.Serif,
-                    color = MaterialTheme.colorScheme.onSurface
-
-                )
-                HorizontalDivider(
-                    modifier = Modifier.padding(vertical = 8.dp)
-                )
-            }
-            if (errorea != null) {
-                item {
-                    Text(text = "Error: $errorea",
-                        color = MaterialTheme.colorScheme.onSurface
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp)
+                ) {
+                    Text(
+                        text = categoriaSeleccionada?.izena
+                            ?: "Gure produktuak",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
                     )
 
-                }
-            } else if (produktuak.isEmpty()) {
-                item {
-                    Text("Cargatzen ...")
-                }
-            } else {
+                    Spacer(modifier = Modifier.height(6.dp))
 
-                items(produktuak) { produktua ->
+                    Text(
+                        text = if (categoriaSeleccionada == null) {
+                            "Aurkitu gustuko dituzun produktuak"
+                        } else {
+                            "${categoriaSeleccionada!!.izena} kategoriako produktuak"
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    HorizontalDivider(
+                        color = ArreseGorria.copy(alpha = 0.35f),
+                        thickness = 1.dp
+                    )
+
+                    // Produktuak bilatzeko testu-eremua.
+                    OutlinedTextField(
+                        value = bilaketaTestua,
+                        onValueChange = { testuaBerria ->
+                            bilaketaTestua = testuaBerria
+                        },
+                        label = {
+                            Text("Bilatu produktua")
+                        },
+                        placeholder = {
+                            Text("Idatzi produktuaren izena")
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 16.dp),
+                        singleLine = true
+                    )
+                }
+            }
+
+            if (cargandoProductos) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 48.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            color = ArreseGorria
+                        )
+                    }
+                }
+            } else if (errorProductos) {
+                item {
+                    Text(
+                        text = "Ezin izan dira produktuak kargatu. Saiatu berriro.",
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(vertical = 24.dp)
+                    )
+                }
+            } else if (productos.isEmpty()) {
+                item {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 12.dp)
+                            .padding(vertical = 40.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-
-                        android.util.Log.d("IMG", "Firebase: ${produktua.argazkia}")
-
-                        val imageResId = produktua.argazkia?.let {
-                            context.resources.getIdentifier(
-                                it.lowercase(),
-                                "drawable",
-                                context.packageName
-                            )
-                        } ?: 0
-
-
-                        android.util.Log.d("IMG", "ID Imagen: $imageResId")
-
-                        Image(
-                            painter = painterResource(
-                                id = if (imageResId != 0)
-                                    imageResId
-                                else
-                                    R.drawable.predeterminada
-                            ),
-                            contentDescription = produktua.izena,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(250.dp)
+                        Text(
+                            text = "Ez dago produkturik",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
                         )
 
+                        Spacer(modifier = Modifier.height(6.dp))
 
                         Text(
-                            modifier = Modifier.padding( top= 10.dp),
-                            text = motak[produktua.mota] ?: "Sin categoría",
-                            fontSize = 22.sp,
-                            fontFamily = FontFamily.Serif,
-                            color = MaterialTheme.colorScheme.onTertiary
+                            text = "Saiatu beste kategoria bat aukeratzen.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding( top= 10.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                text = produktua.izena,
-                                fontSize = 22.sp,
-                                fontFamily = FontFamily.Serif,
-                                color = MaterialTheme.colorScheme.onSurface
-
-                            )
-
-                            Text(
-                                text = "${produktua.prezioa} €",
-                                fontSize = 22.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-
-                            )
-                        }
-
-                        HorizontalDivider(
-                            modifier = Modifier
-                                .width(500.dp)
-                                .padding(vertical = 10.dp),
-                            color = MaterialTheme.colorScheme.onSurface
-
-
-                        )
-                        Text(
-                            text = "Sartu karritora ➝",
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    produktuZerrenda.add(produktua.id)
-                                    Toast.makeText(context, "${produktua.izena} karritora gehitu da", Toast.LENGTH_SHORT).show()
-                                },
-                            textAlign = TextAlign.End
-                        )
-
-
                     }
+                }
+            } else {
+                items(
+                    items = productosFiltrados,
+                    key = { it.id }
+                ) { producto ->
+
+                    val tipo = categorias.find {
+                        it.id == producto.mota.toString()
+                    }?.izena ?: "Kategoriarik gabe"
+
+                    ProductuItem(
+                        producto = producto,
+                        tipo = tipo,
+                        onClick = {
+                            android.util.Log.d("NAVEGACION", "CLICK EN PRODUCTO: ${producto.id}")
+                            onProduktuaClick(producto.id)
+                        }
+                    )
                 }
             }
         }
     }
 }
 
-fun ProduktuakKargatu(
-    resultado: (List<Produktua>) -> Unit,
-    errorea: (String) -> Unit
+// Produktu-txartela: irudia, kategoria, izena eta prezioa.
+@Composable
+fun ProductuItem(
+    producto: Produktua,
+    tipo: String,
+    onClick: () -> Unit = {}
 ) {
-    val db = FirebaseFirestore.getInstance()
-    db.collection("produktuak")
-        .get()
-        .addOnSuccessListener { documentos ->
-            android.util.Log.d(
-                "FIRESTORE",
-                "Documentos encontrados: ${documentos.size()}"
-            )
-            documentos.documents.forEach { documento ->
-                android.util.Log.d(
-                    "FIRESTORE",
-                    "ID: ${documento.id}, datos: ${documento.data}"
-                )
-            }
+    Card(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 3.dp
+        )
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth()
+        ) {
 
-            val lista = documentos.documents.mapNotNull { documento ->
-                try {
-                    documento.toObject(Produktua::class.java)?.copy(id = documento.id)
-                } catch (e: Exception) {
-                    android.util.Log.e(
-                        "FIRESTORE",
-                        "Error en documento ${documento.id}",
-                        e
+            val context = LocalContext.current      // lo usa el Toast de abajo
+
+            IrudiKargatua(
+                argazkia = producto.argazkia,
+                izena = producto.izena,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(190.dp)
+            )
+
+
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Text(
+                    text = tipo,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = ArreseGorria
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = producto.izena,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ){
+                    Text(
+                        text = String.format(
+                            Locale("es", "ES"),
+                            "%.2f €",
+                            producto.prezioa
+                        ),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = ArreseGorria
                     )
-                    null
+
+                    Text(
+                        text = "Sartu karritora ➝",
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .clickable {
+                                produktuZerrenda.add(producto.id)
+                                Toast.makeText(context, "${producto.izena} karritora gehitu da", Toast.LENGTH_SHORT).show()
+                            },
+                        textAlign = TextAlign.End
+                    )
                 }
             }
-
-            android.util.Log.d(
-                "FIRESTORE",
-                "Productos convertidos: ${lista.size}"
-            )
-            resultado(lista)
         }
-        .addOnFailureListener { e ->
-            errorea(e.message ?: "Errorea produktuak kargatzean")
-        }
-}
-
-fun KargatuMotak(
-    resultado: (Map<Int, String>) -> Unit
-) {
-    FirebaseFirestore.getInstance()
-        .collection("product_type")
-        .get()
-        .addOnSuccessListener { docs ->
-
-            val motak = docs.documents.associate { doc ->
-                doc.id.toInt() to (doc.getString("izena") ?: "")
-            }
-
-            resultado(motak)
-        }
+    }
 }

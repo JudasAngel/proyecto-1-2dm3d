@@ -5,10 +5,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.example.arresees.ui.theme.ArreseesTheme
-import com.example.login.ui.pantailak.SaioHasieraPantaila
-import com.example.main.ui.pantailak.CRUDPantaila
-import com.example.main.ui.pantailak.ProduktuakGehitu
-import com.example.main.ui.pantailak.ProduktuakPantaila
+import com.example.main.MusikaKudeatzailea
+
 
 class MainActivity : ComponentActivity() {
 
@@ -19,8 +17,13 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             ArreseesTheme {
-                ProduktuakPantaila()
+                NireAplikazioa()
             }
         }
+    }
+    //para que sis e sale de la palicaion la usca no se escuche en sgeundo palnao
+    override fun onDestroy() {
+        if (isFinishing) MusikaKudeatzailea.gelditu()
+        super.onDestroy()
     }
 }

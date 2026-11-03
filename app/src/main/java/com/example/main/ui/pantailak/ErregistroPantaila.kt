@@ -1,21 +1,15 @@
 package com.example.main.ui.pantailak
 
-import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -38,7 +32,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.apparrese.R
@@ -47,31 +40,32 @@ import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FirebaseFirestore
 
 @Composable
-fun ErregistroPantaila() {
-
+fun ErregistroPantaila(
+    modifier: Modifier = Modifier,
+    onBack: () -> Unit = {}
+) {
     val context = LocalContext.current
 
-    // Variables para guardar lo que escribe el usuario
-    var id by remember {mutableStateOf("")}
+    var id by remember { mutableStateOf("") }
     var nombre by remember { mutableStateOf("") }
     var apellido by remember { mutableStateOf("") }
     var gmail by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var nan by remember { mutableStateOf("")}
+    var nan by remember { mutableStateOf("") }
 
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .fillMaxSize()
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.SpaceEvenly,
+        verticalArrangement = Arrangement.SpaceEvenly
     ) {
 
-        // LOGO
+        // LOGOA
         Image(
             painter = painterResource(id = R.drawable.arrese),
-            contentDescription = "Logo de Ampese",
+            contentDescription = "Logo de Arrese",
             contentScale = ContentScale.Crop,
             modifier = Modifier
                 .width(275.dp)
@@ -84,18 +78,26 @@ fun ErregistroPantaila() {
                 .padding(horizontal = 20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+
             // IZENA
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(text = "Izena:", fontSize = 18.sp, modifier = Modifier.weight(1f))
+                Text(
+                    text = "Izena:",
+                    fontSize = 18.sp,
+                    modifier = Modifier.weight(1f)
+                )
+
                 OutlinedTextField(
                     value = nombre,
                     onValueChange = { nombre = it },
                     modifier = Modifier.width(250.dp),
-                    placeholder = { Text("Escribe tu nombre") },
+                    placeholder = {
+                        Text("Escribe tu nombre")
+                    },
                     colors = OutlinedTextFieldDefaults.colors(
                         unfocusedBorderColor = Color(0xFFD32F2F),
                         focusedBorderColor = Color(0xFFD32F2F)
@@ -109,12 +111,19 @@ fun ErregistroPantaila() {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(text = "Abizena:", fontSize = 18.sp, modifier = Modifier.weight(1f))
+                Text(
+                    text = "Abizena:",
+                    fontSize = 18.sp,
+                    modifier = Modifier.weight(1f)
+                )
+
                 OutlinedTextField(
                     value = apellido,
                     onValueChange = { apellido = it },
                     modifier = Modifier.width(250.dp),
-                    placeholder = { Text("Escribe tu apellido") },
+                    placeholder = {
+                        Text("Escribe tu apellido")
+                    },
                     colors = OutlinedTextFieldDefaults.colors(
                         unfocusedBorderColor = Color(0xFFD32F2F),
                         focusedBorderColor = Color(0xFFD32F2F)
@@ -128,12 +137,19 @@ fun ErregistroPantaila() {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(text = "NAN:", fontSize = 18.sp, modifier = Modifier.weight(1f))
+                Text(
+                    text = "NAN:",
+                    fontSize = 18.sp,
+                    modifier = Modifier.weight(1f)
+                )
+
                 OutlinedTextField(
                     value = nan,
                     onValueChange = { nan = it },
                     modifier = Modifier.width(250.dp),
-                    placeholder = { Text("idatzi zure NANa") },
+                    placeholder = {
+                        Text("Idatzi zure NANa")
+                    },
                     colors = OutlinedTextFieldDefaults.colors(
                         unfocusedBorderColor = Color(0xFFD32F2F),
                         focusedBorderColor = Color(0xFFD32F2F)
@@ -147,12 +163,19 @@ fun ErregistroPantaila() {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(text = "Gmail:", fontSize = 18.sp, modifier = Modifier.weight(1f))
+                Text(
+                    text = "Gmail:",
+                    fontSize = 18.sp,
+                    modifier = Modifier.weight(1f)
+                )
+
                 OutlinedTextField(
                     value = gmail,
                     onValueChange = { gmail = it },
                     modifier = Modifier.width(250.dp),
-                    placeholder = { Text("Escribe tu Gmail") },
+                    placeholder = {
+                        Text("Escribe tu Gmail")
+                    },
                     colors = OutlinedTextFieldDefaults.colors(
                         unfocusedBorderColor = Color(0xFFD32F2F),
                         focusedBorderColor = Color(0xFFD32F2F)
@@ -166,13 +189,21 @@ fun ErregistroPantaila() {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(text = "Pasahitza:", fontSize = 18.sp, modifier = Modifier.weight(1f))
+                Text(
+                    text = "Pasahitza:",
+                    fontSize = 18.sp,
+                    modifier = Modifier.weight(1f)
+                )
+
                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it },
                     modifier = Modifier.width(250.dp),
-                    placeholder = { Text("Escribe tu contraseña") },
-                    visualTransformation = PasswordVisualTransformation(),
+                    placeholder = {
+                        Text("Escribe tu contraseña")
+                    },
+                    visualTransformation =
+                        PasswordVisualTransformation(),
                     colors = OutlinedTextFieldDefaults.colors(
                         unfocusedBorderColor = Color(0xFFD32F2F),
                         focusedBorderColor = Color(0xFFD32F2F)
@@ -180,13 +211,20 @@ fun ErregistroPantaila() {
                 )
             }
         }
+
+        // BOTOIAK
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            Button( onClick = {
 
-            },
+            // ITZULI: regresar al login
+            Button(
+                onClick = {
+                    onBack()
+                },
                 modifier = Modifier
                     .width(150.dp)
                     .height(50.dp),
@@ -194,66 +232,143 @@ fun ErregistroPantaila() {
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFFD32F2F)
                 )
-                ) {
+            ) {
                 Text(text = "ITZULI")
             }
 
+            // SORTU: crear cuenta
             Button(
                 onClick = {
-                    if (nombre.isBlank() || apellido.isBlank() || gmail.isBlank() || password.isBlank() || nan.isBlank()) {
-                        Toast.makeText(context, "Eremu guztiak beteta izan behar dira", Toast.LENGTH_SHORT).show()
+
+                    // Comprobar campos vacíos
+                    if (
+                        nombre.isBlank() ||
+                        apellido.isBlank() ||
+                        gmail.isBlank() ||
+                        password.isBlank() ||
+                        nan.isBlank()
+                    ) {
+                        Toast.makeText(
+                            context,
+                            "Eremu guztiak beteta izan behar dira",
+                            Toast.LENGTH_SHORT
+                        ).show()
                         return@Button
                     }
 
+                    // Validar NAN
                     val nanRegex = Regex("^[0-9]{8}[A-Za-z]$")
+
                     if (!nanRegex.matches(nan.trim())) {
-                        Toast.makeText(context, "NANak 8 zenbaki eta letra 1 izan behar ditu (adib. 12345678A)", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            context,
+                            "NANak 8 zenbaki eta letra 1 izan behar ditu (adib. 12345678A)",
+                            Toast.LENGTH_SHORT
+                        ).show()
                         return@Button
                     }
 
-                    if (!android.util.Patterns.EMAIL_ADDRESS.matcher(gmail.trim()).matches()) {
-                        Toast.makeText(context, "E-maila formatu egokian izan behar da", Toast.LENGTH_SHORT).show()
+                    // Validar email
+                    if (
+                        !android.util.Patterns.EMAIL_ADDRESS
+                            .matcher(gmail.trim())
+                            .matches()
+                    ) {
+                        Toast.makeText(
+                            context,
+                            "E-maila formatu egokian izan behar da",
+                            Toast.LENGTH_SHORT
+                        ).show()
                         return@Button
                     }
 
-                    if (password.trim().length < 6) {
-                        Toast.makeText(context, "Pasahitzak gutxienez 6 karaktere izan behar ditu", Toast.LENGTH_SHORT).show()
+                    // Validar contraseña
+                    if (password.length < 6) {
+                        Toast.makeText(
+                            context,
+                            "Pasahitzak gutxienez 6 karaktere izan behar ditu",
+                            Toast.LENGTH_SHORT
+                        ).show()
                         return@Button
                     }
 
                     val auth = Firebase.auth
                     val db = FirebaseFirestore.getInstance()
 
-                    auth.createUserWithEmailAndPassword(gmail.trim(), password.trim())
-                        .addOnCompleteListener { task ->
-                            if (task.isSuccessful) {
-                                Log.d("Firebase", "createUserWithEmail:success")
-                                id = auth.currentUser?.uid ?: ""
+                    // Crear usuario en Firebase Authentication
+                    auth.createUserWithEmailAndPassword(
+                        gmail.trim(),
+                        password
+                    ).addOnCompleteListener { task ->
 
-                                val userData = hashMapOf(
-                                    "uid" to id,
-                                    "izena" to nombre,
-                                    "abizena" to apellido,
-                                    "email" to gmail,
-                                    "NAN" to nan,
-                                    "id-type" to 1
-                                )
+                        if (task.isSuccessful) {
 
-                                db.collection("erabiltzaileak").document(id).set(userData)
-                                    .addOnSuccessListener {
-                                        Log.d("Firestore", "Erabiltzailea ongi gordeta ID honekin: $id")
-                                        Toast.makeText(context, "Erregistroa arrakastatsua eta gordeta!", Toast.LENGTH_SHORT).show()
-                                        (context as? ComponentActivity)?.finish()
-                                    }
-                                    .addOnFailureListener { e ->
-                                        Log.e("Firestore", "Errorea datuak gordetzen", e)
-                                        Toast.makeText(context, "Errorea Firestore-n: ${e.message}", Toast.LENGTH_SHORT).show()
-                                    }
-                            } else {
-                                Log.w("Firebase", "createUserWithEmail:failure", task.exception)
-                                Toast.makeText(context, "Errorea erregistroan: ${task.exception?.message}", Toast.LENGTH_LONG).show()
-                            }
+                            Log.d(
+                                "Firebase",
+                                "createUserWithEmail:success"
+                            )
+
+                            id = auth.currentUser?.uid ?: ""
+
+                            val userData = hashMapOf(
+                                "uid" to id,
+                                "izena" to nombre.trim(),
+                                "abizena" to apellido.trim(),
+                                "email" to gmail.trim(),
+                                "NAN" to nan.trim().uppercase(),
+                                "id-type" to 1
+                            )
+
+                            // Guardar datos en Firestore
+                            db.collection("erabiltzaileak")
+                                .document(id)
+                                .set(userData)
+                                .addOnSuccessListener {
+
+                                    Log.d(
+                                        "Firestore",
+                                        "Erabiltzailea ongi gordeta ID honekin: $id"
+                                    )
+
+                                    Toast.makeText(
+                                        context,
+                                        "Erregistroa arrakastatsua eta gordeta!",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+
+                                    // Regresar al login sin cerrar la actividad
+                                    onBack()
+                                }
+                                .addOnFailureListener { e ->
+
+                                    Log.e(
+                                        "Firestore",
+                                        "Errorea datuak gordetzen",
+                                        e
+                                    )
+
+                                    Toast.makeText(
+                                        context,
+                                        "Errorea Firestore-n: ${e.message}",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }
+
+                        } else {
+
+                            Log.w(
+                                "Firebase",
+                                "createUserWithEmail:failure",
+                                task.exception
+                            )
+
+                            Toast.makeText(
+                                context,
+                                "Errorea erregistroan: ${task.exception?.message}",
+                                Toast.LENGTH_LONG
+                            ).show()
                         }
+                    }
                 },
                 modifier = Modifier
                     .width(150.dp)
@@ -270,8 +385,5 @@ fun ErregistroPantaila() {
                 )
             }
         }
-
-
-
     }
 }
