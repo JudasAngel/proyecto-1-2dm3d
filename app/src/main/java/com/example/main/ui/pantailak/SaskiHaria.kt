@@ -12,6 +12,7 @@ data class SaskiItem(
     val id: String,
     val izena: String,
     val prezioa: Double,
+    val stocka: Int,
     val kantitatea: Int
 )
 
@@ -32,9 +33,14 @@ class SaskiLotea(
                 10, TimeUnit.SECONDS
             )
             val items = snap.documents.mapNotNull { doc ->
-                doc.toObject(Produktua::class.java)?.let {
-                    SaskiItem(doc.id, it.izena, it.prezioa, kopuruak[doc.id] ?: 1)
-                }
+                val izena = doc.getString("izena") ?: return@mapNotNull null
+                SaskiItem(
+                    id = doc.id,
+                    izena = izena,
+                    prezioa = (doc.get("prezioa") as? Number)?.toDouble() ?: 0.0,
+                    stocka = (doc.get("stock") as? Number)?.toInt() ?: 0,
+                    kantitatea = kopuruak[doc.id] ?: 1
+                )
             }
             synchronized(lock) { emaitza.addAll(items) }     // varios hilos a la vez
             Log.d("SASKI", "Lotea amaituta: ${items.size} produktu")

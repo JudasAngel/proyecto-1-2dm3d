@@ -1,5 +1,6 @@
 package com.example.main.ui.pantailak
 
+import android.app.Activity
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
@@ -51,39 +52,47 @@ fun SaskiPantaila(modifier: Modifier = Modifier) {
     val ids = kopurua.keys.toList().sorted()
 
     // Saskiko produktu berriak agertzen direnean bakarrik kargatu
-    LaunchedEffect(ids) {
+    val activity = context as? Activity   // import android.app.Activity
+
+    DisposableEffect(ids) {
         if (ids.isEmpty()) {
             produktuak = emptyMap()
-            return@LaunchedEffect
+            kargatzen = false
+            return@DisposableEffect onDispose { }
         }
 
         kargatzen = true
         errorea = false
 
-        db.collection("produktuak")
-            .whereIn(FieldPath.documentId(), ids)
-            .get()
-            .addOnSuccessListener { snapshot ->
-                produktuak = snapshot.documents
-                    .mapNotNull { doc ->
-                        val izena = doc.getString("izena") ?: return@mapNotNull null
-                        Produktua(
-                            id = doc.id,
-                            izena = izena,
-                            prezioa = (doc.get("prezioa") as? Number)?.toDouble() ?: 0.0,
-                            stocka = (doc.get("stock") as? Number)?.toInt() ?: 0,
-                            argazkia = doc.getString("argazkia"),
-                            mota = (doc.get("mota") as? Number)?.toInt() ?: 0
+        val koordinatzailea = activity?.let { act ->
+            kargatuSaskia(
+                activity = act,
+                ids = ids,
+                onOk = { items ->
+                    produktuak = items.associate {
+                        it.id to Produktua(
+                            id = it.id,
+                            izena = it.izena,
+                            prezioa = it.prezioa,
+                            stocka = it.stocka
                         )
                     }
-                    .associateBy { it.id }
-                kargatzen = false
-            }
-            .addOnFailureListener { e ->
-                Log.e("SASKIA", "Errorea saskia kargatzean", e)
-                errorea = true
-                kargatzen = false
-            }
+                    kargatzen = false
+                },
+                onErr = { mezua ->
+                    Log.e("SASKIA", mezua)
+                    errorea = true
+                    kargatzen = false
+                }
+            )
+        }
+
+        if (koordinatzailea == null) {      // no Activity available
+            errorea = true
+            kargatzen = false
+        }
+
+        onDispose { koordinatzailea?.interrupt() }   // cancels coordinator and batches
     }
 
     // Kalkuluak: beti produktuZerrenda-tik datoz, ez dago egoera bikoizturik

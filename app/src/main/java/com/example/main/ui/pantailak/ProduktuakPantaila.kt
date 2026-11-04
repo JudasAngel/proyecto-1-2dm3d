@@ -109,7 +109,8 @@ fun ProduktuakPantaila(
                         izena = izena,
                         deskribapena = doc.getString("deskribapena") ?: "",
                         prezioa = prezioa,
-                        argazkia = doc.getString("argazkia")
+                        argazkia = doc.getString("argazkia"),
+                        stocka = (doc.get("stock") as? Number)?.toInt() ?: 0
                     )
                 }
 
@@ -242,6 +243,16 @@ fun ProductuItem(
     tipo: String,
     onClick: () -> Unit = {}
 ) {
+    // Saskian dagoen kopurua eta stock-a: stock-a gainditzea ekiditeko
+    val saskianKopurua = produktuZerrenda.count { it == producto.id }
+    val gehitzeaPosible = producto.stocka > 0 && saskianKopurua < producto.stocka
+
+    val saskiTestua = when {
+        producto.stocka <= 0 -> "Stock agortuta"
+        saskianKopurua >= producto.stocka -> "Stock guztia saskian"
+        else -> "Sartu karritora ➝"
+    }
+
     Card(
         onClick = onClick,
         modifier = Modifier
@@ -304,15 +315,22 @@ fun ProductuItem(
                     )
 
                     Text(
-                        text = "Sartu karritora ➝",
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.clickable {
-                            produktuZerrenda.add(producto.id)
-                            Toast.makeText(
-                                context,
-                                "${producto.izena} karritora gehitu da",
-                                Toast.LENGTH_SHORT
-                            ).show()
+                        text = saskiTestua,
+                        color = if (gehitzeaPosible) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                        modifier = Modifier.clickable(enabled = gehitzeaPosible) {
+                            // Berriz egiaztatu klik azkarrek ere stock-a gainditu ez dezaten
+                            if (produktuZerrenda.count { it == producto.id } < producto.stocka) {
+                                produktuZerrenda.add(producto.id)
+                                Toast.makeText(
+                                    context,
+                                    "${producto.izena} karritora gehitu da",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
                         },
                         textAlign = TextAlign.End
                     )
