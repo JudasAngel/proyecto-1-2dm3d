@@ -14,6 +14,7 @@ activityKtx = "1.13.0"
 foundationLayout = "1.12.1"
 identity = "202411.1"
 navigationCompose = "2.10.2"
+foundation = "1.12.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -37,6 +38,7 @@ androidx-compose-foundation-layout = { group = "androidx.compose.foundation", na
 firebase-storage = { group = "com.google.firebase", name = "firebase-storage" }
 identity = { group = "com.android.identity", name = "identity", version.ref = "identity" }
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
+androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

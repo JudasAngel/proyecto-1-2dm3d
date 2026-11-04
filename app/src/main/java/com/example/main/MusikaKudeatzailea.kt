@@ -6,7 +6,7 @@ import android.util.Log
 import com.example.apparrese.R
 
 object MusikaKudeatzailea {
-    private val lock = Any()                      // llave: protege player y martxan
+    private val lock = Any()               // llave: protege player y martxan
 
     //encedido por decirlo asi
     private var player: MediaPlayer? = null
@@ -22,7 +22,7 @@ object MusikaKudeatzailea {
         Thread {
             Log.d("MUSIKA", "Hilo: cargando audio")
             try {
-                val mp = MediaPlayer.create(context, R.raw.musica)
+                val mp = MediaPlayer.create(appContext, R.raw.musica)
                 synchronized(lock) {
                     if (!martxan || mp == null) {
                         Log.d("MUSIKA", "Hilo: me pidieron parar mientras cargaba")
@@ -34,7 +34,7 @@ object MusikaKudeatzailea {
 
                     }
                     mp.isLooping = true
-                    mp.setVolume(0.4f, 0.4f)
+                    mp.setVolume(1f, 1f)
                     mp.start()
                     player = mp
 

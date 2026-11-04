@@ -22,9 +22,10 @@ import java.util.Locale
 import com.example.apparrese.R
 
 
-// Método de clase 1: subclase de Thread
+// una clase que herada un hilo
 class IrudiHaria(
     private val argazkia: String,
+    //para ahceder a los recurso y pasar los cambios al hilo principal
     private val activity: Activity,
     private val onOk: (Bitmap) -> Unit,
     private val onErr: () -> Unit            // NUEVO: salida para el error
@@ -34,17 +35,16 @@ class IrudiHaria(
         Log.d("IRUDIA", "Hasi: $argazkia")
         try {
 
-            // 1. Nombre (texto de Firestore) -> número de recurso del drawable
+            // hartzen dugu argazkiaren id identificatzailea argakiara izeane ragiliz
             val id = activity.resources.getIdentifier(
                 argazkia.lowercase(Locale.ROOT), "drawable", activity.packageName
             )
-
-            // 2. Número de recurso -> Bitmap (la parte pesada)
+            //bit map en un fomato de guarda do de imagen po pixel
             val bmp = if (id != 0) BitmapFactory.decodeResource(activity.resources, id) else null
 
             Log.d("IRUDIA", "Amaituta: $argazkia (id=$id)")
 
-            // 3. Devolver el resultado al hilo principal
+            //  Bildatzen dugu argazkia
             if (bmp != null) {
                 activity.runOnUiThread { onOk(bmp) }
             }else{
@@ -71,6 +71,7 @@ fun IrudiKargatua(
     var errorea by remember(argazkia) { mutableStateOf(false) }    // NUEVO
 
     DisposableEffect(argazkia) {
+        //aragazkia null ez vada eta ativiti ez bada null deuzten saio threar paszten datuak
         if (!argazkia.isNullOrBlank() && activity != null) {
             IrudiHaria(argazkia, activity,
                 { bitmap = it },
@@ -79,17 +80,20 @@ fun IrudiKargatua(
         }
         onDispose { }
     }
-
+    //ser ikusko den pnatalian
     Box(modifier = modifier) {
         val bmp = bitmap
         when {
+            //bmp ez vada null ahu da rgazkia dagoala
              bmp != null ->
+                 //ua jartzen da
                 Image(
                     bitmap = bmp.asImageBitmap(),
                     contentDescription = izena,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.matchParentSize()
                 )
+            //argazkia  null bada edo ctubiti edo errorea ematen badu jartzen da bat regernzt moduan
             argazkia.isNullOrBlank() || activity == null || errorea ->
                 Image(
                     painter = painterResource(R.drawable.predeterminada),

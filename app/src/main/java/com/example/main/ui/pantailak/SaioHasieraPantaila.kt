@@ -44,13 +44,15 @@ import com.google.firebase.auth.FirebaseAuthWeakPasswordException
 
 
 @Composable
-fun SaioHasieraPantaila(onLoginExitoso: () -> Unit) {
+fun SaioHasieraPantaila(
+    modifier: Modifier = Modifier,
+    onLoginExitoso: () -> Unit,
+    onErregistratu: () -> Unit) {
 
     var email by remember { mutableStateOf("") }
     var pasahitza by remember { mutableStateOf("") }
     var kargatzen by remember { mutableStateOf(false) }
     //var saioaHasita by remember { mutableStateOf(false) }
-    var erregistroaIrekita by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
 
@@ -102,14 +104,6 @@ fun SaioHasieraPantaila(onLoginExitoso: () -> Unit) {
                 ProduktuakPantaila()
             }*/
 
-            erregistroaIrekita -> {
-                ErregistroPantaila(
-                    modifier = Modifier.padding(paddingValues),
-                    onBack = {
-                        erregistroaIrekita = false
-                    }
-                )
-            }
 
             else -> {
                 Column(
@@ -211,7 +205,7 @@ fun SaioHasieraPantaila(onLoginExitoso: () -> Unit) {
 
                         Button(
                             onClick = {
-                                erregistroaIrekita = true
+                                onErregistratu()
                             },
                             enabled = !kargatzen,
                             modifier = Modifier.width(130.dp),
