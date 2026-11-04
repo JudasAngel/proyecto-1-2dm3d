@@ -1,42 +1,17 @@
 package com.example.main.ui.pantailak
 
+import android.util.Log
 import android.widget.Toast
-import androidx.activity.compose.LocalActivity
-import java.util.Locale
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Remove
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -51,60 +26,76 @@ import com.example.main.ui.data.produktuZerrenda
 import com.example.main.ui.theme.ArreseGorria
 import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FirebaseFirestore
-//Esta clase define qué información tiene cada producto del carrito
-data class SaskiItem(
-    val id: String,
-    val izena: String,
-    val prezioa: Double,
-    var kantitatea: Int
+import java.util.Locale
+
+private const val BIDALKETA_PREZIOA = 2.50
+
+// Saskiko lerro bat: produktua + zenbat unitate dagoen saskian
+private data class SaskiLerroa(
+    val produktua: Produktua,
+    val kantitatea: Int
 )
 
 @Composable
-fun SaskiPantaila(
-    modifier: Modifier = Modifier
-) {
+fun SaskiPantaila(modifier: Modifier = Modifier) {
     val context = LocalContext.current
-//lsiat de la saskia valors de karga y de error
-    var saskiItems by remember { mutableStateOf<List<SaskiItem>>(emptyList()) }
+    val db = remember { FirebaseFirestore.getInstance() }
+
+    // Produktu xehetasunak Firestore-tik (id -> Produktua)
+    var produktuak by remember { mutableStateOf<Map<String, Produktua>>(emptyMap()) }
     var kargatzen by remember { mutableStateOf(false) }
-    var errorea by remember { mutableStateOf<String?>(null) }
-//cargamos al incial la pantalla y le apsamo la lista de productos
-    val activity = LocalActivity.current
+    var errorea by remember { mutableStateOf(false) }
 
-    DisposableEffect(Unit) {
-        var hari: Thread? = null
-        val ids = produktuZerrenda.toList()          // copia hecha en el hilo principal
+    // Iturri bakarra: produktuZerrenda. Kantitateak hemendik kalkulatzen dira.
+    val kopurua = produktuZerrenda.groupingBy { it }.eachCount()
+    val ids = kopurua.keys.toList().sorted()
 
+    // Saskiko produktu berriak agertzen direnean bakarrik kargatu
+    LaunchedEffect(ids) {
         if (ids.isEmpty()) {
-            saskiItems = emptyList()
-            kargatzen = false
-        } else if (activity != null) {
-            kargatzen = true
-            errorea = null
-            hari = kargatuSaskia(
-                activity = activity,
-                ids = ids,
-                onOk = { saskiItems = it; kargatzen = false },
-                onErr = { errorea = it; kargatzen = false }
-            )
+            produktuak = emptyMap()
+            return@LaunchedEffect
         }
-        onDispose { hari?.interrupt() }              // al salir de la pantalla se cancela la carga
-    }
-//uan multiplicaion de los precion de sakiitems miltiplican precio por katidad esto es apr cada porductos
-    val subtotal = saskiItems.sumOf { it.prezioa * it.kantitatea }
-    //percio de envio
-    val bidalketa = if (saskiItems.isNotEmpty()) 2.50 else 0.0
-    //el tola del a bidelketa ms el subtotla
-    val totala = subtotal + bidalketa
 
-    Scaffold(
-        modifier = modifier
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
+        kargatzen = true
+        errorea = false
+
+        db.collection("produktuak")
+            .whereIn(FieldPath.documentId(), ids)
+            .get()
+            .addOnSuccessListener { snapshot ->
+                produktuak = snapshot.documents
+                    .mapNotNull { doc ->
+                        val izena = doc.getString("izena") ?: return@mapNotNull null
+                        Produktua(
+                            id = doc.id,
+                            izena = izena,
+                            prezioa = (doc.get("prezioa") as? Number)?.toDouble() ?: 0.0,
+                            stocka = (doc.get("stock") as? Number)?.toInt() ?: 0,
+                            argazkia = doc.getString("argazkia"),
+                            mota = (doc.get("mota") as? Number)?.toInt() ?: 0
+                        )
+                    }
+                    .associateBy { it.id }
+                kargatzen = false
+            }
+            .addOnFailureListener { e ->
+                Log.e("SASKIA", "Errorea saskia kargatzean", e)
+                errorea = true
+                kargatzen = false
+            }
+    }
+
+    // Kalkuluak: beti produktuZerrenda-tik datoz, ez dago egoera bikoizturik
+    val lerroak = ids.mapNotNull { id ->
+        produktuak[id]?.let { SaskiLerroa(it, kopurua[id] ?: 0) }
+    }
+    val azpitotala = lerroak.sumOf { it.produktua.prezioa * it.kantitatea }
+    val bidalketa = if (lerroak.isNotEmpty()) BIDALKETA_PREZIOA else 0.0
+    val guztira = azpitotala + bidalketa
+
+    Column(modifier = modifier.fillMaxSize()) {
+
         Text(
             text = "Zure Saskia",
             fontSize = 26.sp,
@@ -114,76 +105,52 @@ fun SaskiPantaila(
         )
         HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
-        if (kargatzen) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .weight(1f),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(color = ArreseGorria)
-            }
-        } else if (errorea != null) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .weight(1f),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("Errorea: $errorea", fontSize = 16.sp, color = Color.Red)
-            }
-        } else if (saskiItems.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .weight(1f),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("Zure saskia hutsik dago", fontSize = 18.sp, color = Color.Gray)
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                //le decimos que use id como identificador unico
-                items(saskiItems, key = { it.id }) { item ->
-                    SaskiCard(
-                        item = item,
-                        //cuando decimos de aññadri rvisa el id usama el de ese msimo
-                        onAdd = {
-                            produktuZerrenda.add(item.id)
-                            saskiItems = saskiItems.map {
-                                if (it.id == item.id) it.copy(kantitatea = it.kantitatea + 1) else it
-                            }
-                        },
-                        onRemove = {
-                            val index = produktuZerrenda.indexOf(item.id)
-                            if (index != -1) {
-                                produktuZerrenda.removeAt(index)
-                            }
-                            saskiItems = saskiItems.mapNotNull {
-                                if (it.id == item.id) {
-                                    if (it.kantitatea > 1) it.copy(kantitatea = it.kantitatea - 1) else null
-                                } else it
-                            }
-                        },
-                        onDelete = {
-                            produktuZerrenda.removeAll { it == item.id }
-                            saskiItems = saskiItems.filter { it.id != item.id }
-                        }
-                    )
+        // Zerrenda: egoera bakoitza argi bereizita
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+        ) {
+            when {
+                kargatzen -> CircularProgressIndicator(
+                    color = ArreseGorria,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+
+                errorea -> Text(
+                    text = "Errorea saskia kargatzean",
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+
+                lerroak.isEmpty() -> Text(
+                    text = "Zure saskia hutsik dago",
+                    fontSize = 18.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+
+                else -> LazyColumn(
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(lerroak, key = { it.produktua.id }) { lerroa ->
+                        SaskiTxartela(
+                            lerroa = lerroa,
+                            onGehitu = { produktuZerrenda.add(lerroa.produktua.id) },
+                            onKendu = { produktuZerrenda.remove(lerroa.produktua.id) },
+                            onEzabatu = { produktuZerrenda.removeAll { it == lerroa.produktua.id } }
+                        )
+                    }
                 }
             }
         }
 
+        // Beheko laukia: guztira eta ordainketa
         Surface(
             tonalElevation = 8.dp,
             shadowElevation = 8.dp,
-            color = Color(0xFFFAFAFA)
+            color = MaterialTheme.colorScheme.surface
         ) {
             Column(
                 modifier = Modifier
@@ -194,41 +161,47 @@ fun SaskiPantaila(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Azpitotala:", fontSize = 16.sp, color = Color.Gray)
-                    Text(String.format(Locale.ROOT, "%.2f €", subtotal), fontSize = 16.sp)
+                    Text("Azpitotala:", fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(formatPrezioa(azpitotala), fontSize = 16.sp)
                 }
+
                 Spacer(modifier = Modifier.height(4.dp))
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Bidalketa:", fontSize = 16.sp, color = Color.Gray)
-                    Text(String.format(Locale.ROOT, "%.2f €", bidalketa), fontSize = 16.sp)
+                    Text("Bidalketa:", fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(formatPrezioa(bidalketa), fontSize = 16.sp)
                 }
+
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text("Guztira:", fontSize = 18.sp, fontWeight = FontWeight.Bold)
                     Text(
-                        String.format(Locale.ROOT, "%.2f €", totala),
+                        text = formatPrezioa(guztira),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = ArreseGorria
                     )
                 }
+
                 Spacer(modifier = Modifier.height(12.dp))
+
                 Button(
                     onClick = {
                         Toast.makeText(context, "Erosketa simulatua!", Toast.LENGTH_SHORT).show()
                         produktuZerrenda.clear()
-                        saskiItems = emptyList()
                     },
-                    enabled = saskiItems.isNotEmpty(),
+                    enabled = lerroak.isNotEmpty(),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp),
+                    shape = RoundedCornerShape(8.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = ArreseGorria)
                 ) {
                     Text("Ordaindu", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
@@ -237,58 +210,88 @@ fun SaskiPantaila(
         }
     }
 }
-}
 
+// Saskiko produktu baten txartela
 @Composable
-fun SaskiCard(
-    item: SaskiItem,
-    onAdd: () -> Unit,
-    onRemove: () -> Unit,
-    onDelete: () -> Unit
+private fun SaskiTxartela(
+    lerroa: SaskiLerroa,
+    onGehitu: () -> Unit,
+    onKendu: () -> Unit,
+    onEzabatu: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = item.izena, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    text = lerroa.produktua.izena,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = String.format(Locale.ROOT, "%.2f € / alea", item.prezioa),
+                    text = String.format(Locale.ROOT, "%.2f € / alea", lerroa.produktua.prezioa),
                     fontSize = 14.sp,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            IconButton(onClick = onKendu, modifier = Modifier.size(40.dp)) {
+                Icon(Icons.Default.Remove, contentDescription = "Kendu")
+            }
+
+            Text(
+                text = "${lerroa.kantitatea}",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(horizontal = 4.dp)
+            )
+
+            // Stockak mugatzen du: ezin da stock baino gehiago gehitu
+            IconButton(
+                onClick = onGehitu,
+                enabled = lerroa.kantitatea < lerroa.produktua.stocka,
+                modifier = Modifier.size(40.dp)
             ) {
-                IconButton(onClick = onRemove, modifier = Modifier.size(32.dp)) {
-                    Icon(Icons.Default.Remove, contentDescription = "Kendu", tint = Color.Gray)
-                }
-                Text(text = "${item.kantitatea}", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                IconButton(onClick = onAdd, modifier = Modifier.size(32.dp)) {
-                    Icon(Icons.Default.Add, contentDescription = "Gehitu", tint = ArreseGorria)
-                }
-                IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
-                    Icon(Icons.Default.Delete, contentDescription = "Ezabatu", tint = Color.Red)
-                }
+                Icon(
+                    Icons.Default.Add,
+                    contentDescription = "Gehitu",
+                    tint = ArreseGorria
+                )
+            }
+
+            IconButton(onClick = onEzabatu, modifier = Modifier.size(40.dp)) {
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = "Ezabatu",
+                    tint = MaterialTheme.colorScheme.error
+                )
             }
         }
     }
 }
 
+private fun formatPrezioa(balioa: Double): String =
+    String.format(Locale.ROOT, "%.2f €", balioa)
+
 @Preview(showBackground = true)
 @Composable
-fun SaskiPantailaPreview() {
-    SaskiPantaila()
+fun SaskiTxartelaPreview() {
+    SaskiTxartela(
+        lerroa = SaskiLerroa(
+            produktua = Produktua(id = "1", izena = "Gurinezko opila", prezioa = 2.40, stocka = 15),
+            kantitatea = 2
+        ),
+        onGehitu = {},
+        onKendu = {},
+        onEzabatu = {}
+    )
 }

@@ -2,439 +2,314 @@ package com.example.main.ui.pantailak
 
 import android.util.Log
 import android.widget.Toast
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.apparrese.R
-import com.example.main.ui.theme.ArreseGorria
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.SubdirectoryArrowLeft
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.platform.LocalContext
-import com.example.main.ui.data.Mota
+import com.example.main.ui.data.Balidazioa
+import com.example.main.ui.data.Kategoria
 import com.google.firebase.firestore.FirebaseFirestore
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProduktuakEguneratu(productId: String? = null, onAtzeraEgin: () -> Unit) {
-    var menuAbierto by remember { mutableStateOf(false) }
+fun ProduktuakEguneratu(
+    modifier: Modifier = Modifier,
+    productId: String?,
+    kategoriak: List<Kategoria>,
+    onAtzeraEgin: () -> Unit = {}
+) {
+    val context = LocalContext.current
+    val db = remember { FirebaseFirestore.getInstance() }
+    val editatzen = !productId.isNullOrEmpty()
+
+    // Formularioko eremuak
     var izena by remember { mutableStateOf("") }
     var deskribapena by remember { mutableStateOf("") }
     var stocka by remember { mutableStateOf("") }
     var prezioa by remember { mutableStateOf("") }
     var argazkia by remember { mutableStateOf("") }
-    val context = LocalContext.current
-    val db = FirebaseFirestore.getInstance()
+    // Mota-objektua ez dugu gordetzen, ID-a bakarrik. Izena kategoriak-etik kalkulatzen da.
+    var motaId by remember { mutableStateOf<Int?>(null) }
 
-    // Firebase-tik jasotako motak gordetzeko zerrenda
-    var motak by remember { mutableStateOf<List<Mota>>(emptyList()) }
-
-    // Aukeratutako mota gordetzeko
-    var mota by remember { mutableStateOf<Mota?>(null) }
-
-// Dropdown menua irekita dagoen ala ez
+    // Pantailaren fluxua
+    var kargatzen by remember { mutableStateOf(editatzen) }
+    var gordetzen by remember { mutableStateOf(false) }
+    var saiatuDa by remember { mutableStateOf(false) }
     var motaMenuIrekita by remember { mutableStateOf(false) }
 
+    val kategoriaAukeratua = kategoriak.find { it.id == motaId?.toString() }
 
-// Motak kargatu eta, ID-a badago, produktuaren datuak ere kargatu
-    LaunchedEffect(productId, motak) {
-        motakKargatuEgunertuPantailan { emaitza ->
-            motak = emaitza
+    // Balidazioa: eremu bakoitzaren egoera
+    val izenaBaliozkoa = izena.isNotBlank()
+    val stockBaliozkoa = Balidazioa.stockBaliozkoa(stocka)
+    val prezioBaliozkoa = Balidazioa.prezioaBaliozkoa(prezioa)
+    val motaBaliozkoa = motaId != null
+    val denaBaliozkoa = izenaBaliozkoa && stockBaliozkoa && prezioBaliozkoa && motaBaliozkoa
 
-            // Produktua editatzen ari bagara, bere datuak bilatu Firestore-n
-            if (!productId.isNullOrEmpty()) {
-                db.collection("produktuak").document(productId).get()
-                    .addOnSuccessListener { document ->
-                        if (document.exists()) {
-                            izena = document.getString("izena") ?: ""
-                            deskribapena = document.getString("deskribapena") ?: ""
-                            stocka = document.get("stock")?.toString() ?: ""
-                            prezioa = document.get("prezioa")?.toString() ?: ""
-                            argazkia = document.getString("argazkia") ?: ""
+    // Errorea erakutsi bakarrik lehen saiakeraren ondoren
+    val izenaOkerra = saiatuDa && !izenaBaliozkoa
+    val stockOkerra = saiatuDa && !stockBaliozkoa
+    val prezioOkerra = saiatuDa && !prezioBaliozkoa
+    val motaOkerra = saiatuDa && !motaBaliozkoa
 
-                            val motaId = document.getLong("mota")?.toInt()
-                            if (motaId != null) {
-                                mota = motak.find { it.id == motaId }
-                            }
-                        }
-                    }
+    // Editatzean: produktuaren datuak behin bakarrik kargatu
+    LaunchedEffect(productId) {
+        val id = productId
+        if (id.isNullOrEmpty()) {
+            kargatzen = false
+            return@LaunchedEffect
+        }
+
+        kargatzen = true
+        db.collection("produktuak").document(id).get()
+            .addOnSuccessListener { doc ->
+                if (doc.exists()) {
+                    izena = doc.getString("izena") ?: ""
+                    deskribapena = doc.getString("deskribapena") ?: ""
+                    stocka = doc.get("stock")?.toString() ?: ""
+                    prezioa = doc.get("prezioa")?.toString() ?: ""
+                    argazkia = doc.getString("argazkia") ?: ""
+                    motaId = (doc.get("mota") as? Number)?.toInt()
+                } else {
+                    Toast.makeText(context, "Ez da produktua aurkitu", Toast.LENGTH_SHORT).show()
+                }
+                kargatzen = false
             }
+            .addOnFailureListener { e ->
+                Log.e("EGUNERATU", "Errorea produktua kargatzean", e)
+                Toast.makeText(context, "Errorea produktua kargatzean", Toast.LENGTH_SHORT).show()
+                kargatzen = false
+            }
+    }
+
+    fun akatsa(mezua: String, e: Exception) {
+        gordetzen = false
+        Log.e("EGUNERATU", mezua, e)
+        Toast.makeText(context, mezua, Toast.LENGTH_LONG).show()
+    }
+
+    fun gorde() {
+        saiatuDa = true
+        val mota = motaId
+        if (!denaBaliozkoa || mota == null || gordetzen) return
+
+        gordetzen = true
+        val datuak = hashMapOf<String, Any>(
+            "izena" to izena.trim(),
+            "deskribapena" to deskribapena.trim(),
+            "stock" to stocka.trim().toInt(),
+            "prezioa" to prezioa.trim().replace(",", ".").toDouble(),
+            "mota" to mota,
+            "argazkia" to argazkia.trim()
+        )
+
+        val id = productId
+        if (id.isNullOrEmpty()) {
+            // Produktu berria: lehenik izen eta mota berdina duen bat dagoen begiratu
+            db.collection("produktuak")
+                .whereEqualTo("izena", izena.trim())
+                .whereEqualTo("mota", mota)
+                .get()
+                .addOnSuccessListener { emaitza ->
+                    if (!emaitza.isEmpty) {
+                        gordetzen = false
+                        Toast.makeText(context, "Produktu hau dagoeneko badago", Toast.LENGTH_LONG).show()
+                    } else {
+                        db.collection("produktuak").add(datuak)
+                            .addOnSuccessListener {
+                                Toast.makeText(context, "Produktua ondo gorde da", Toast.LENGTH_SHORT).show()
+                                onAtzeraEgin()
+                            }
+                            .addOnFailureListener { e -> akatsa("Errorea gordetzean", e) }
+                    }
+                }
+                .addOnFailureListener { e -> akatsa("Errorea egiaztatzean", e) }
+        } else {
+            // Editatzen ari gara: dokumentua eguneratu
+            db.collection("produktuak").document(id)
+                .set(datuak)
+                .addOnSuccessListener {
+                    Toast.makeText(context, "Produktua ondo eguneratu da", Toast.LENGTH_SHORT).show()
+                    onAtzeraEgin()
+                }
+                .addOnFailureListener { e -> akatsa("Errorea eguneratzean", e) }
         }
     }
 
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 20.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text(
+            text = if (editatzen) "Produktua eguneratu" else "Produktua gehitu",
+            style = MaterialTheme.typography.headlineMedium,
+            fontFamily = FontFamily.Serif,
+            fontWeight = FontWeight.Bold
+        )
+        HorizontalDivider()
 
-    Scaffold(
-        // BARRA SUPERIOR
-        topBar = {
-            TopAppBar(
-                modifier = Modifier.height(110.dp),
-                title = {
-                    Image(
-                        painter = painterResource(R.drawable.logoarrese2),
-                        contentDescription = "Logo Arrese",
-                        modifier = Modifier.height(70.dp)
-                    )
-                },
-                actions = {
-                    Box {
-                        IconButton(
-                            onClick = { menuAbierto = true }
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Menu,
-                                contentDescription = "Abrir menu",
-                                tint = Color.White,
-                                modifier = Modifier.size(32.dp)
-                            )
-                        }
-
-                        DropdownMenu(
-                            expanded = menuAbierto,
-                            onDismissRequest = {
-                                menuAbierto = false
-                            }
-                        ) {
-                            DropdownMenuItem(
-                                text = {
-                                    Text("Opcion provisional")
-                                },
-                                onClick = {
-                                    menuAbierto = false
-                                }
-                            )
-                        }
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = ArreseGorria
-                )
+        if (kargatzen) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 48.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        } else {
+            EremuaTestua(
+                balioa = izena,
+                onAldatu = { izena = it },
+                etiketa = "Izena",
+                errorea = izenaOkerra,
+                errorMezua = "Sartu produktuaren izena"
             )
-        },
 
-    ) { paddingValues ->
-        // CONTENIDO PRINCIPAL
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(
-                    start = 16.dp,
-                    end = 16.dp,
-                    top = 30.dp
-                ),
-            // horizontalAlignment = Alignment.CenterHorizontally
+            EremuaTestua(
+                balioa = deskribapena,
+                onAldatu = { deskribapena = it },
+                etiketa = "Deskribapena",
+                errorea = false,
+                errorMezua = "",
+                singleLine = false
+            )
 
-        ) {
+            EremuaTestua(
+                balioa = stocka,
+                onAldatu = { stocka = it },
+                etiketa = "Stock-a",
+                errorea = stockOkerra,
+                errorMezua = "Stock-ak zenbaki osoa izan behar du (0 edo handiagoa)",
+                teklatua = KeyboardType.Number
+            )
 
-            item {
-                Text(
-                    // Titulua aldatzen da editatzen edo gehitzen ari den arabera
-                    text = if (productId.isNullOrEmpty()) "Produktua gehitu" else "Produktua eguneratu",
-                    fontSize = 30.sp,
-                    fontFamily = FontFamily.Serif
+            EremuaTestua(
+                balioa = prezioa,
+                onAldatu = { prezioa = it },
+                etiketa = "Prezioa",
+                errorea = prezioOkerra,
+                errorMezua = "Prezioak zenbaki positiboa izan behar du (adib. 2,50)",
+                teklatua = KeyboardType.Decimal
+            )
 
-                )
-                HorizontalDivider(
+            // Mota: dropdown-a (Material3-ren osagai egokia)
+            ExposedDropdownMenuBox(
+                expanded = motaMenuIrekita,
+                onExpandedChange = { motaMenuIrekita = it }
+            ) {
+                OutlinedTextField(
+                    value = kategoriaAukeratua?.izena ?: "",
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Mota") },
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = motaMenuIrekita)
+                    },
+                    isError = motaOkerra,
+                    supportingText = { if (motaOkerra) Text("Aukeratu produktu mota") },
                     modifier = Modifier
-                        .width(430.dp)
-                        .padding(vertical = 8.dp)
+                        .menuAnchor()
+                        .fillMaxWidth()
                 )
-            }
 
-            item {
-                OutlinedTextField(
-                    value = izena,
-                    onValueChange = { izena = it },
-                    singleLine = true,
-                    label = {
-                        Text("Izena")
-                    },
-
-                    //enabled = !kargatzen,
-                    modifier = Modifier.padding(top = 20.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedBorderColor = ArreseGorria,
-                        focusedBorderColor = ArreseGorria
-                    )
-                )
-            }
-
-            item {
-                OutlinedTextField(
-                    value = deskribapena,
-                    onValueChange = { deskribapena = it },
-                    singleLine = true,
-                    label = {
-                        Text("Deskribapena")
-                    },
-
-                    //enabled = !kargatzen,
-                    modifier = Modifier.padding(top = 20.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedBorderColor = ArreseGorria,
-                        focusedBorderColor = ArreseGorria
-                    )
-                )
-            }
-
-            item {
-                OutlinedTextField(
-                    value = stocka,
-                    onValueChange = { stocka = it },
-                    singleLine = true,
-                    label = {
-                        Text("Stock-a")
-                    },
-
-                    //enabled = !kargatzen,
-                    modifier = Modifier.padding(top = 20.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedBorderColor = ArreseGorria,
-                        focusedBorderColor = ArreseGorria
-                    )
-                )
-            }
-
-            item {
-                OutlinedTextField(
-                    value = prezioa,
-                    onValueChange = { prezioa = it },
-                    singleLine = true,
-                    label = {
-                        Text("Prezioa")
-                    },
-
-                    //enabled = !kargatzen,
-                    modifier = Modifier.padding(top = 20.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedBorderColor = ArreseGorria,
-                        focusedBorderColor = ArreseGorria
-                    )
-                )
-            }
-
-            item {
-                Box{
-                    OutlinedTextField(
-                        value = mota?.izena ?: "",
-                        onValueChange = {},
-                        readOnly = true,
-                        singleLine = true,
-                        label = {
-                            Text("Mota")
-                        },
-
-                        // Eskuineko aldean gezia ikonoa jartzeko
-                        trailingIcon = {
-                            IconButton(
-                                // Gezia sakatzerakoan menua ireki edo itxi
-                                onClick = {
-                                    motaMenuIrekita = !motaMenuIrekita
-                                }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.ArrowDropDown,
-                                    contentDescription = "Aukeratu mota"
-                                )
+                ExposedDropdownMenu(
+                    expanded = motaMenuIrekita,
+                    onDismissRequest = { motaMenuIrekita = false }
+                ) {
+                    kategoriak.forEach { kat ->
+                        DropdownMenuItem(
+                            text = { Text(kat.izena) },
+                            onClick = {
+                                motaId = kat.id.toIntOrNull()
+                                motaMenuIrekita = false
                             }
-                        },
-                        modifier = Modifier.padding(top = 20.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            unfocusedBorderColor = ArreseGorria,
-                            focusedBorderColor = ArreseGorria
                         )
-                    )
-
-                    // Aukeren menua
-                    DropdownMenu(
-                        // Menua irekita dagoen ala ez adierazi
-                        expanded = motaMenuIrekita,
-
-                        // Menutik kanpo sakatzean menua itxi
-                        onDismissRequest = {
-                            motaMenuIrekita = false
-                        }
-                    ) {
-                        // Firebase-tik jasotako mota guztiak aztertu
-                        motak.forEach { aukera ->
-
-                            // Aukera bakoitzeko menu-elementu bat sortu
-                            DropdownMenuItem(
-                                // Aukeraren izena erakutsi
-                                text = {
-                                    Text(aukera.izena)
-                                },
-                                onClick = {
-                                    // Aukeratutako mota gorde
-                                    mota = aukera
-                                    motaMenuIrekita = false
-                                }
-                            )
-                        }
                     }
                 }
             }
 
-            item {
-                OutlinedTextField(
-                    value = argazkia,
-                    onValueChange = { argazkia = it },
-                    singleLine = true,
-                    label = {
-                        Text("Argazkia")
-                    },
+            EremuaTestua(
+                balioa = argazkia,
+                onAldatu = { argazkia = it },
+                etiketa = "Argazkia",
+                errorea = false,
+                errorMezua = ""
+            )
+            Text(
+                text = "Irudiaren izena drawable-arena da, luzapenik gabe eta minuskulaz (adib. ogia)",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
 
-                    //enabled = !kargatzen,
-                    modifier = Modifier.padding(top = 20.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedBorderColor = ArreseGorria,
-                        focusedBorderColor = ArreseGorria
-                    )
-                )
-            }
+            Spacer(modifier = Modifier.height(16.dp))
 
-            item {
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                OutlinedButton(
+                    onClick = onAtzeraEgin,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(56.dp)
                 ) {
-                    Button(
-                        onClick = {
-                            if (izena.isBlank()) {
-                                Toast.makeText(context, "Sartu produktuaren izena", Toast.LENGTH_SHORT).show()
-                            } else if (mota == null) {
-                                Toast.makeText(context, "Aukeratu produktu mota", Toast.LENGTH_SHORT).show()
-                            } else {
-                                val produktuaMap = hashMapOf(
-                                    "izena" to izena.trim(),
-                                    "deskribapena" to deskribapena,
-                                    "stock" to (stocka.toIntOrNull() ?: 0),
-                                    "prezioa" to (prezioa.toDoubleOrNull() ?: 0.0),
-                                    "mota" to mota!!.id,
-                                    "argazkia" to argazkia
-                                )
+                    Text("Itzuli", fontSize = 18.sp)
+                }
 
-                                if (!productId.isNullOrEmpty()) {
-                                    // ID-a badago, dauden datuak eguneratzen ditugu
-                                    db.collection("produktuak").document(productId)
-                                        .set(produktuaMap)
-                                        .addOnSuccessListener {
-                                            Toast.makeText(context, "Produktua ondo eguneratu da", Toast.LENGTH_SHORT).show()
-                                        }
-                                        .addOnFailureListener {
-                                            Toast.makeText(context, "Errorea eguneratzean", Toast.LENGTH_SHORT).show()
-                                        }
-                                } else {
-                                    // ID-rik ez badago, produktu berria sortzen dugu
-                                    db.collection("produktuak").add(produktuaMap)
-                                        .addOnSuccessListener {
-                                            Toast.makeText(context, "Produktua ondo gorde da", Toast.LENGTH_SHORT).show()
-                                            onAtzeraEgin()
-                                        }
-                                        .addOnFailureListener {
-                                            Toast.makeText(context, "Errorea gordetzean", Toast.LENGTH_SHORT).show()
-                                        }
-                                }
-                            }
+                Button(
+                    onClick = { gorde() },
+                    enabled = !gordetzen,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(56.dp)
+                ) {
+                    Text(
+                        text = when {
+                            gordetzen -> "Gordetzen..."
+                            editatzen -> "Eguneratu"
+                            else -> "Gorde"
                         },
-                        modifier = Modifier
-                            .width(330.dp)
-                            .padding(top = 50.dp),
-
-                        shape = RoundedCornerShape(2.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = ArreseGorria,
-                            contentColor = Color.White
-                        )
-                    ) {
-                        Text(
-                            text = if (productId.isNullOrEmpty()) "Gorde" else "Eguneratu",
-                            fontSize = 20.sp
-                        )
-                    }
-
-                }
-                IconButton(
-                    onClick = onAtzeraEgin
-                    //modifier = Modifier.size(30.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.SubdirectoryArrowLeft,
-                        contentDescription = "Editatu",
-                        modifier =
-                            Modifier.size(40.dp)
-                                .padding(top = 10.dp),
-
-                        tint = Color.Red
+                        fontSize = 18.sp
                     )
                 }
-
             }
         }
-
-
     }
 }
 
-fun motakKargatuEgunertuPantailan(callback: (List<Mota>) -> Unit) {
-    val db = FirebaseFirestore.getInstance()
-
-    db.collection("product_type").get()
-        .addOnSuccessListener { emaitza ->
-            val datuak = mutableListOf<Mota>()
-
-            for (dokumentua in emaitza) {
-                val izena = dokumentua.getString("izena")
-
-                if (izena != null) {
-                    // Dokumentuaren IDa zenbaki bihurtu
-                    val id = dokumentua.id.toIntOrNull()
-
-                    if (id != null) {
-                        datuak.add(Mota(id, izena))
-                    }
-                }
-            }
-
-            callback(datuak)
-        }
-        .addOnFailureListener { e ->
-            Log.e("Firestore", "Errorea motak kargatzean", e)
-            callback(emptyList())
-        }
+// Eremu bakarreko testu-eremua, errore mezuarekin. Kolorea theme-tik dator.
+@Composable
+private fun EremuaTestua(
+    balioa: String,
+    onAldatu: (String) -> Unit,
+    etiketa: String,
+    errorea: Boolean,
+    errorMezua: String,
+    teklatua: KeyboardType = KeyboardType.Text,
+    singleLine: Boolean = true
+) {
+    OutlinedTextField(
+        value = balioa,
+        onValueChange = onAldatu,
+        label = { Text(etiketa) },
+        isError = errorea,
+        supportingText = { if (errorea) Text(errorMezua) },
+        keyboardOptions = KeyboardOptions(keyboardType = teklatua),
+        singleLine = singleLine,
+        modifier = Modifier.fillMaxWidth()
+    )
 }

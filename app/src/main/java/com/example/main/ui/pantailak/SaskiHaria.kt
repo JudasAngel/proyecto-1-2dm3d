@@ -8,6 +8,13 @@ import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FirebaseFirestore
 import java.util.concurrent.TimeUnit
 
+data class SaskiItem(
+    val id: String,
+    val izena: String,
+    val prezioa: Double,
+    val kantitatea: Int
+)
+
 class SaskiLotea(
     private val ids: List<String>,
     private val kopuruak: Map<String, Int>,
