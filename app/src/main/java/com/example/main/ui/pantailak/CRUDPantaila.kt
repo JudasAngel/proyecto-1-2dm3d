@@ -1,5 +1,6 @@
 package com.example.main.ui.pantailak
 
+import android.app.Activity
 import android.content.Context
 import android.util.Log
 import android.widget.Toast
@@ -35,31 +36,60 @@ fun CRUDPantaila(
     var cargando by remember { mutableStateOf(true) }
     var errorea by remember { mutableStateOf(false) }
 
-    // Produktuen zerrenda entzule baten bidez: datuak aldatzen direnean automatikoki eguneratzen da
-    DisposableEffect(db) {
-        val listener = db.collection("produktuak")
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    Log.e("CRUD", "Errorea produktuak kargatzean", error)
-                    errorea = true
-                    cargando = false
-                } else if (snapshot != null) {
-                    produktuak = snapshot.documents.map { doc ->
-                        Produktua(
-                            id = doc.id,
-                            izena = doc.getString("izena")?.takeIf { it.isNotBlank() } ?: "Izenik gabe",
-                            prezioa = (doc.get("prezioa") as? Number)?.toDouble() ?: 0.0,
-                            stocka = (doc.get("stock") as? Number)?.toInt() ?: 0,
-                            argazkia = doc.getString("argazkia"),
-                            mota = (doc.get("mota") as? Number)?.toInt() ?: 0
-                        )
-                    }
-                    cargando = false
-                    errorea = false
-                }
-            }
+    val activity = context as? Activity
 
-        onDispose { listener.remove() }
+// Produktuak kargatzeko funtzioa, hari batean
+    val kargatuDatuak = {
+        if (activity != null) {
+            Thread {
+                db.collection("produktuak").get()
+                    .addOnSuccessListener { snapshot ->
+                        val lista = snapshot.documents.map { doc ->
+                            Produktua(
+                                id = doc.id,
+                                izena = doc.getString("izena")?.takeIf { it.isNotBlank() } ?: "Izenik gabe",
+                                prezioa = (doc.get("prezioa") as? Number)?.toDouble() ?: 0.0,
+                                stocka = (doc.get("stock") as? Number)?.toInt() ?: 0,
+                                argazkia = doc.getString("argazkia"),
+                                mota = (doc.get("mota") as? Number)?.toInt() ?: 0
+                            )
+                        }
+                        activity.runOnUiThread {
+                            produktuak = lista
+                            cargando = false
+                            errorea = false
+                        }
+                    }
+                    .addOnFailureListener { e ->
+                        Log.e("CRUD", "Errorea produktuak kargatzean", e)
+                        activity.runOnUiThread {
+                            errorea = true
+                            cargando = false
+                        }
+                    }
+            }.start()
+        }
+    }
+
+// Produktua ezabatzeko funtzioa, hari batean. Ondoren zerrenda berriro kargatzen da.
+    val ezabatu: (String) -> Unit = { id ->
+        if (id.isNotEmpty() && activity != null) {
+            Thread {
+                db.collection("produktuak").document(id)
+                    .delete()
+                    .addOnSuccessListener {
+                        activity.runOnUiThread {
+                            Toast.makeText(context, "Produktua ezabatuta", Toast.LENGTH_SHORT).show()
+                            kargatuDatuak()
+                        }
+                    }
+            }.start()
+        }
+    }
+
+// Pantaila irekitzean behin kargatu
+    LaunchedEffect(Unit) {
+        kargatuDatuak()
     }
 
     LazyColumn(
@@ -110,23 +140,11 @@ fun CRUDPantaila(
                     price = produktua.prezioa,
                     stock = produktua.stocka,
                     onEdit = { onEdit(produktua.id) },
-                    onDelete = { ezabatu(db, context, produktua.id) }
+                    onDelete = { ezabatu(produktua.id) }
                 )
             }
         }
     }
-}
-
-// Produktua Firestore-tik ezabatzen du. Zerrenda entzuleak automatikoki eguneratzen du.
-private fun ezabatu(db: FirebaseFirestore, context: Context, id: String) {
-    db.collection("produktuak").document(id)
-        .delete()
-        .addOnSuccessListener {
-            Toast.makeText(context, "Produktua ezabatuta", Toast.LENGTH_SHORT).show()
-        }
-        .addOnFailureListener {
-            Toast.makeText(context, "Errorea ezabatzean", Toast.LENGTH_SHORT).show()
-        }
 }
 
 // Produktu baten errenglona: izena, prezioa, stocka eta botoiak.

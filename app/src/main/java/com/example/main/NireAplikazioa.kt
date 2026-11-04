@@ -126,9 +126,7 @@ fun NireAplikazioa() {
         onDispose { listener.remove() }
     }
 
-    val hasierakoRuta = remember {
-        if (FirebaseAuth.getInstance().currentUser != null) "home" else "login"
-    }
+    val hasierakoRuta = "login"
 
     val rutasConBarra = setOf("home", "carrito", "crud", "producto/{id}")
     Scaffold(

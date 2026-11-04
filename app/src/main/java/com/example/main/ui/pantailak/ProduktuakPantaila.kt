@@ -23,6 +23,11 @@ import com.example.main.ui.theme.ArreseGorria
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import java.util.Locale
+import android.app.Activity
+import android.os.Handler
+import android.os.Looper
+import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicBoolean
 
 @Composable
 fun ProduktuakPantaila(
@@ -31,6 +36,7 @@ fun ProduktuakPantaila(
     kategoriaAukeratua: Kategoria?,
     onProduktuaClick: (String) -> Unit = {}
 ) {
+    val haria = remember { Executors.newSingleThreadExecutor() }
     val context = LocalContext.current
     val db = remember { FirebaseFirestore.getInstance() }
 
@@ -40,9 +46,29 @@ fun ProduktuakPantaila(
     var bilaketaTestua by remember { mutableStateOf("") }
 
     // Bilaketa: testua edo produktuak aldatzen direnean bakarrik berriro kalkulatzen da
-    val productosFiltrados = remember(productos, bilaketaTestua) {
+    var productosFiltrados by remember { mutableStateOf<List<Produktua>>(emptyList()) }
+
+    val activity = context as? Activity
+
+// Bilaketa haria batean egiten da. Bilaketa aldatzen denean aurrekoa ezeztatzen da.
+    DisposableEffect(bilaketaTestua, productos) {
+        val bizirik = AtomicBoolean(true)
         val testua = bilaketaTestua.trim()
-        productos.filter { it.izena.contains(testua, ignoreCase = true) }
+
+        val hilo = Thread {
+            val emaitza = productos.filter { it.izena.contains(testua, ignoreCase = true) }
+            if (bizirik.get()) {
+                Handler(Looper.getMainLooper()).post {
+                    if (bizirik.get()) productosFiltrados = emaitza
+                }
+            }
+        }
+        hilo.start()
+
+        onDispose {
+            bizirik.set(false)
+            hilo.interrupt()
+        }
     }
 
     // Produktuak kargatu: kategoria aldatzen denean bakarrik
@@ -55,13 +81,16 @@ fun ProduktuakPantaila(
             db.collection("produktuak").whereEqualTo("mota", idMota)
         } ?: db.collection("produktuak")
 
-        val listener = consulta.addSnapshotListener { snapshot, error ->
+        val listener = consulta.addSnapshotListener(haria) { snapshot, error ->
             if (error != null) {
                 Log.e("DEBUG_FIREBASE", "Errorea produktuak kargatzean", error)
-                errorea = true
-                cargando = false
+                activity?.runOnUiThread {
+                    errorea = true
+                    cargando = false
+                }
             } else if (snapshot != null) {
-                productos = snapshot.documents.mapNotNull { doc ->
+                // Dokumentuen mapaketa entzulearen haria (executor) batean egiten da
+                val lista = snapshot.documents.mapNotNull { doc ->
                     val izena = doc.getString("izena") ?: return@mapNotNull null
 
                     val prezioa = when (val p = doc.get("prezioa")) {
@@ -83,8 +112,12 @@ fun ProduktuakPantaila(
                         argazkia = doc.getString("argazkia")
                     )
                 }
-                cargando = false
-                errorea = false
+
+                activity?.runOnUiThread {
+                    productos = lista
+                    cargando = false
+                    errorea = false
+                }
             }
         }
 
