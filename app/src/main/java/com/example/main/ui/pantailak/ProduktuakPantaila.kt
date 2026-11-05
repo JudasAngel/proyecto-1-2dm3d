@@ -18,7 +18,6 @@ import androidx.compose.ui.unit.dp
 import com.example.main.IrudiKargatua
 import com.example.main.ui.data.Kategoria
 import com.example.main.ui.data.Produktua
-import com.example.main.ui.data.produktuZerrenda
 import com.example.main.ui.theme.ArreseGorria
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -28,12 +27,14 @@ import android.os.Handler
 import android.os.Looper
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
+import com.example.main.ui.data.SaskiViewModel
 
 @Composable
 fun ProduktuakPantaila(
     modifier: Modifier = Modifier,
     kategoriak: List<Kategoria>,
     kategoriaAukeratua: Kategoria?,
+    saskiVM: SaskiViewModel,
     onProduktuaClick: (String) -> Unit = {}
 ) {
     val haria = remember { Executors.newSingleThreadExecutor() }
@@ -229,6 +230,8 @@ fun ProduktuakPantaila(
                 ProductuItem(
                     producto = producto,
                     tipo = tipo,
+                    saskianKopurua = saskiVM.kopurua(producto.id),
+                    onGehitu = { saskiVM.gehitu(producto.id, producto.stocka) },
                     onClick = { onProduktuaClick(producto.id) }
                 )
             }
@@ -241,10 +244,10 @@ fun ProduktuakPantaila(
 fun ProductuItem(
     producto: Produktua,
     tipo: String,
+    saskianKopurua: Int,
+    onGehitu: () -> Unit,
     onClick: () -> Unit = {}
 ) {
-    // Saskian dagoen kopurua eta stock-a: stock-a gainditzea ekiditeko
-    val saskianKopurua = produktuZerrenda.count { it == producto.id }
     val gehitzeaPosible = producto.stocka > 0 && saskianKopurua < producto.stocka
 
     val saskiTestua = when {
@@ -252,6 +255,8 @@ fun ProductuItem(
         saskianKopurua >= producto.stocka -> "Stock guztia saskian"
         else -> "Sartu karritora ➝"
     }
+
+    val context = LocalContext.current
 
     Card(
         onClick = onClick,
@@ -266,8 +271,6 @@ fun ProductuItem(
             defaultElevation = 3.dp
         )
     ) {
-        val context = LocalContext.current
-
         Column(
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -322,15 +325,12 @@ fun ProductuItem(
                             MaterialTheme.colorScheme.onSurfaceVariant
                         },
                         modifier = Modifier.clickable(enabled = gehitzeaPosible) {
-                            // Berriz egiaztatu klik azkarrek ere stock-a gainditu ez dezaten
-                            if (produktuZerrenda.count { it == producto.id } < producto.stocka) {
-                                produktuZerrenda.add(producto.id)
-                                Toast.makeText(
-                                    context,
-                                    "${producto.izena} karritora gehitu da",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
+                            onGehitu()
+                            Toast.makeText(
+                                context,
+                                "${producto.izena} karritora gehitu da",
+                                Toast.LENGTH_SHORT
+                            ).show()
                         },
                         textAlign = TextAlign.End
                     )

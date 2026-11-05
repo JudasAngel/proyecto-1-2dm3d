@@ -23,9 +23,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.main.ui.data.Produktua
-import com.example.main.ui.data.produktuZerrenda
+import com.example.main.ui.data.SaskiViewModel
 import com.example.main.ui.theme.ArreseGorria
-import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FirebaseFirestore
 import java.util.Locale
 
@@ -38,7 +37,10 @@ private data class SaskiLerroa(
 )
 
 @Composable
-fun SaskiPantaila(modifier: Modifier = Modifier) {
+fun SaskiPantaila(
+    modifier: Modifier = Modifier,
+    saskiVM: SaskiViewModel
+) {
     val context = LocalContext.current
     val db = remember { FirebaseFirestore.getInstance() }
 
@@ -48,7 +50,7 @@ fun SaskiPantaila(modifier: Modifier = Modifier) {
     var errorea by remember { mutableStateOf(false) }
 
     // Iturri bakarra: produktuZerrenda. Kantitateak hemendik kalkulatzen dira.
-    val kopurua = produktuZerrenda.groupingBy { it }.eachCount()
+    val kopurua = saskiVM.ids.groupingBy { it }.eachCount()
     val ids = kopurua.keys.toList().sorted()
 
     // Saskiko produktu berriak agertzen direnean bakarrik kargatu
@@ -146,9 +148,9 @@ fun SaskiPantaila(modifier: Modifier = Modifier) {
                     items(lerroak, key = { it.produktua.id }) { lerroa ->
                         SaskiTxartela(
                             lerroa = lerroa,
-                            onGehitu = { produktuZerrenda.add(lerroa.produktua.id) },
-                            onKendu = { produktuZerrenda.remove(lerroa.produktua.id) },
-                            onEzabatu = { produktuZerrenda.removeAll { it == lerroa.produktua.id } }
+                            onGehitu = { saskiVM.gehitu(lerroa.produktua.id, lerroa.produktua.stocka) },
+                            onKendu = { saskiVM.kendu(lerroa.produktua.id) },
+                            onEzabatu = { saskiVM.ezabatu(lerroa.produktua.id) }
                         )
                     }
                 }
@@ -204,7 +206,7 @@ fun SaskiPantaila(modifier: Modifier = Modifier) {
                 Button(
                     onClick = {
                         Toast.makeText(context, "Erosketa simulatua!", Toast.LENGTH_SHORT).show()
-                        produktuZerrenda.clear()
+                        saskiVM.hustu()
                     },
                     enabled = lerroak.isNotEmpty(),
                     modifier = Modifier

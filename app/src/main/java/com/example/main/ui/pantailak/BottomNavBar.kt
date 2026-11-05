@@ -20,7 +20,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
-import com.example.main.ui.data.produktuZerrenda
 import com.example.main.ui.theme.ArreseGorria
 
 private data class ItemNav(
@@ -33,19 +32,18 @@ private data class ItemNav(
 fun BottomNavBar(
     navController: NavHostController,
     userType: Long?,
+    saskiKopurua: Int,
     onSalir: () -> Unit
 ) {
 
-    val navBackStackEntry by
-    navController.currentBackStackEntryAsState()
-
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
     val rutaActual = navBackStackEntry?.destination?.route
 
     val items = buildList {
         add(ItemNav(ruta = "home", icono = Icons.Default.Home, descripcion = "Home"))
         add(ItemNav(ruta = "carrito", icono = Icons.Default.ShoppingCart, descripcion = "Carrito"))
 
-        // Show CRUD option only if userType is 2
+        // CRUD botoia administratzaileentzat bakarrik (userType == 2)
         if (userType == 2L) {
             add(ItemNav(ruta = "crud", icono = Icons.Default.Build, descripcion = "CRUD"))
         }
@@ -60,26 +58,17 @@ fun BottomNavBar(
         items.forEach { item ->
 
             NavigationBarItem(
-                selected = item.ruta != null &&
-                        rutaActual == item.ruta,
+                selected = item.ruta != null && rutaActual == item.ruta,
 
                 onClick = {
-
                     if (item.ruta == null) {
-
-                        // El botón Salir no navega a otra pantalla:
-                        // ejecuta la acción de cierre de sesión.
+                        // Salir ez da pantaila bat; saioa ixten du
                         onSalir()
-
                     } else if (rutaActual != item.ruta) {
-
                         navController.navigate(item.ruta) {
-                            popUpTo(
-                                navController.graph.findStartDestination().id
-                            ) {
+                            popUpTo(navController.graph.findStartDestination().id) {
                                 saveState = true
                             }
-
                             launchSingleTop = true
                             restoreState = true
                         }
@@ -87,7 +76,7 @@ fun BottomNavBar(
                 },
 
                 icon = {
-                    if (item.ruta == "carrito" && produktuZerrenda.isNotEmpty()) {
+                    if (item.ruta == "carrito" && saskiKopurua > 0) {
                         BadgedBox(
                             badge = {
                                 Badge(
@@ -95,7 +84,7 @@ fun BottomNavBar(
                                     contentColor = ArreseGorria
                                 ) {
                                     Text(
-                                        text = "${produktuZerrenda.size}",
+                                        text = "$saskiKopurua",
                                         fontWeight = FontWeight.Bold
                                     )
                                 }
