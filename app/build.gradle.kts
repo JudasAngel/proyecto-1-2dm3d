@@ -29,8 +29,14 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        buildConfigField("String", "LAMBDA_URL", "\"${localProps.getProperty("LAMBDA_URL", "")}\"")
-        buildConfigField("String", "LAMBDA_API_TOKEN", "\"${localProps.getProperty("LAMBDA_API_TOKEN", "")}\"")
+        buildConfigField("String", "LAMBDA_URL",
+            "\"${localProps.getProperty("LAMBDA_URL", "")}\"")
+        buildConfigField("String", "LAMBDA_API_TOKEN",
+            "\"${localProps.getProperty("LAMBDA_API_TOKEN", "")}\"")
+    }
+
+    buildFeatures {
+        buildConfig = true
     }
 
     buildTypes {
@@ -80,4 +86,8 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.11.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.11.0")
     implementation("androidx.navigation:navigation-compose:2.9.6")
+
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
 }
