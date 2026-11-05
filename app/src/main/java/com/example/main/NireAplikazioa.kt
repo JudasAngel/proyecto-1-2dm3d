@@ -20,6 +20,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -37,6 +38,7 @@ import com.example.main.ui.pantailak.SaskiPantaila
 import com.google.firebase.auth.FirebaseAuth
 import com.example.login.ui.pantailak.DetalleProductoScreen
 import com.example.main.ui.data.Kategoria
+import com.example.main.ui.data.SaskiViewModel
 import com.example.main.ui.pantailak.ArreseTopBar
 import com.example.main.ui.pantailak.KategoriaMenua
 import com.google.firebase.firestore.FirebaseFirestore
@@ -45,6 +47,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 fun NireAplikazioa() {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val saskiVM: SaskiViewModel = viewModel()
 
     var userType by remember { mutableStateOf<Long?>(null) }
 
@@ -150,8 +153,11 @@ fun NireAplikazioa() {
                 BottomNavBar(
                     navController = navController,
                     userType = userType,
+                    saskiKopurua = saskiVM.ids.size,
                     onSalir = {
                         userType = null
+                        saskiVM.hustu()
+                        kategoriaAukeratua = null
                         MusikaKudeatzailea.gelditu()
                         FirebaseAuth.getInstance().signOut()
                         navController.navigate("login") {
@@ -200,6 +206,7 @@ fun NireAplikazioa() {
 
             composable("home") {
                 ProduktuakPantaila(
+                    saskiVM = saskiVM,
                     modifier = Modifier.fillMaxSize(),
                     kategoriak = kategoriak,
                     kategoriaAukeratua = kategoriaAukeratua,
@@ -213,6 +220,7 @@ fun NireAplikazioa() {
             ) { backStackEntry ->
                 val id = backStackEntry.arguments?.getString("id") ?: ""
                 DetalleProductoScreen(
+                    saskiVM = saskiVM,
                     modifier = Modifier.fillMaxSize(),
                     productoId = id,
                     onVolver = { navController.popBackStack() }
@@ -220,7 +228,10 @@ fun NireAplikazioa() {
             }
 
             composable("carrito") {
-                SaskiPantaila(modifier = Modifier.fillMaxSize())
+                SaskiPantaila(
+                    saskiVM = saskiVM,
+                    modifier = Modifier.fillMaxSize()
+                )
             }
 
             composable("crud") {

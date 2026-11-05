@@ -316,7 +316,7 @@ fun ErregistroPantaila(
                                 "abizena" to apellido.trim(),
                                 "email" to gmail.trim(),
                                 "NAN" to nan.trim().uppercase(),
-                                "id-type" to 2
+                                "id-type" to 1
                             )
 
                             // Guardar datos en Firestore

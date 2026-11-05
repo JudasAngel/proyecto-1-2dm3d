@@ -16,7 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.main.IrudiKargatua
 import com.example.main.ui.data.Produktua
-import com.example.main.ui.data.produktuZerrenda
+import com.example.main.ui.data.SaskiViewModel
 import com.example.main.ui.theme.ArreseGorria
 import com.google.firebase.firestore.FirebaseFirestore
 import java.util.Locale
@@ -25,6 +25,7 @@ import java.util.Locale
 fun DetalleProductoScreen(
     modifier: Modifier = Modifier,
     productoId: String,
+    saskiVM: SaskiViewModel,
     onVolver: () -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -72,7 +73,7 @@ fun DetalleProductoScreen(
     val item = produktua
 
     // Saskian dagoen kopurua stock-a baino txikiagoa den begiratu
-    val saskianKopurua = produktuZerrenda.count { it == productoId }
+    val saskianKopurua = saskiVM.kopurua(productoId)
     val gehitzeaPosible = item != null && item.stocka > 0 && saskianKopurua < item.stocka
 
     val botoiTestua = when {
@@ -179,7 +180,7 @@ fun DetalleProductoScreen(
 
                     Button(
                         onClick = {
-                            produktuZerrenda.add(item.id)
+                            saskiVM.gehitu(item.id, item.stocka)
                             Toast.makeText(
                                 context,
                                 "Produktua saskira gehitu da",
