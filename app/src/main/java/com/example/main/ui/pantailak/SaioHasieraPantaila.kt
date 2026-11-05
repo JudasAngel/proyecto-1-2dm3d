@@ -33,6 +33,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.apparrese.R
+import com.example.main.network.LoginEmailService
 import com.example.main.ui.theme.ArreseGorria
 import com.example.main.ui.pantailak.ErregistroPantaila
 import com.google.firebase.FirebaseNetworkException
@@ -177,10 +178,33 @@ fun SaioHasieraPantaila(
 
                                             if (task.isSuccessful) {
                                                 erakutsiToast(
-                                                    "Saioa hasi da!"
+                                                    "Ongi etorri "+ email + "!"
                                                 )
+
+
+                                                // Avisa por email de que se ha iniciado sesión (AWS Lambda)
+                                                val erabiltzailea = task.result?.user
+                                                val erabiltzaileEmaila =
+                                                    erabiltzailea?.email ?: email.trim()
+                                                // Firebase no guarda el nombre por defecto:
+                                                // si no hay displayName se usa la parte del email antes de la @
+                                                val erabiltzaileIzena =
+                                                    erabiltzailea?.displayName
+                                                        ?.takeIf { it.isNotBlank() }
+                                                        ?: erabiltzaileEmaila.substringBefore("@")
+
+
+                                                LoginEmailService.sendLoginEmailInBackground(
+                                                    erabiltzaileEmaila,
+                                                    erabiltzaileIzena
+                                                )
+
+
+                                                // saioaHasi pantaila zabaldu
+                                               // saioaHasita = true
+
+
                                                 onLoginExitoso()
-                                                //saioaHasita = true
                                             } else {
                                                 erakutsiToast(
                                                     firebaseErrorea(
